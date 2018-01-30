@@ -13,7 +13,9 @@
 %        4 : sawtooth
 %**************************************************************************
 
-function [success, cardInfo, signal] = tyh1_spcMCalcSignal (cardInfo, len, shape, loops, gainP)
+% NEED TO PASS WIDTH OF PULSE FOR CASE 2
+
+function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape, loops, gainP)
     
     signal = zeros (1, len);
 
@@ -59,7 +61,7 @@ function [success, cardInfo, signal] = tyh1_spcMCalcSignal (cardInfo, len, shape
             case 1
                 signal (1, i) = scale * sin (sineXScale*i);
     
-            % ----- rectangel -----
+            % ----- rectangle -----
             case 2
                 if posInBlock < 20%blockHalf %%/1000/2
                     signal (1, i) = maxFS;

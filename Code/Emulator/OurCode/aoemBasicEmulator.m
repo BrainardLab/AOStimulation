@@ -1,64 +1,100 @@
-%**************************************************************************
+% Top level code for basic AO emulation
 %
-% rep_std_single.m                              (c) Spectrum GmbH, 04/2015
-%
-%**************************************************************************
-%
-% Example for all SpcMDrv based (M2i, M4i) generator cards. 
-% Shows standard data replay using single mode 
+% Description:
+%    This program is our evolving emulation code for the AOSLO system.
 %  
-% Feel free to use this source for own projects and modify it in any kind
+%    The goal is to set system parameters and then generate hsync, vsync
+%    and pixel signals, with the pixels coming from a movie that was
+%    acquired on the real system.
 %
-%**************************************************************************
-clear all;
-%parameter
+%    We will know this is working when we can play the emulator back into
+%    the AOSLO acquisition system and get back a movie very close to what
+%    we started with.
+%
+%    Note that this program is a work in progress - it does not yet do the
+%    above.
+%
 
+% History
+%   01/xx/18  tyh   Wrote this starting with provided rep_std_single
+%                   example code.
+%
+%                   rep_std_single.m  (c) Spectrum GmbH, 04/2015
 
-sampling_clk_frequency = 50 * 10^6;  %% DA card sampling rate
-sampling_clk_time = 10^9/sampling_clk_frequency; % unit = ns
+%% Clear out workspace
+clear;
 
-pix_clk_frequency = 38.4910 * 10^6;
-pix_clk_time = 10^9/pix_clk_frequency; % unit = ns
+%% Define parameters
 
-hr_sync = 15 * pix_clk_time;
-hr_back_porch = 369 * pix_clk_time;
-hr_active = 721 * pix_clk_time;
-hr_front_porch = 1395 * pix_clk_time;
+% DA card sampling rate and clock time.  Clock time is in ns.
+sampling_clk_frequency = 50 * 10^6;  
 
-hr_clk = hr_sync + hr_back_porch + hr_active + hr_front_porch;
+% Emulation parameters
+%
+% Master clock frequency being emulated, and corrsponding clock time 
+% in ns.
+emulatorParams.pix_clk_frequency = 38.4910 * 10^6;
+
+emulatorParams.hr_sync_pixels = 15;
+emulatorParams.hr_back_porch_pixels = 369;
+emulatorParams.hr_active_pixels = 721;
+emulatorParams.hr_front_porch_pixels = 1395;
+
+emulatorParams.vt_sync_pixels = 10;
+emulatorParams.vt_back_porch_pixels = 136;
+emulatorParams.vt_active_pixels = 645;
+emulatorParams.vt_front_porch_pixels = 133;
+
+% Output maximum voltage
+emulatorParams.outputMillivolts = 3000;
+
+%% Calculate convenient numbers from the parameters
+
+% Clock times in ns
+sampling_clk_time = 10^9/sampling_clk_frequency;
+pix_clk_time = 10^9/emulatorParams.pix_clk;
+
+% Times in nanoseconds for horizontal 
+hr_sync_ns = emulatorParams.hr_sync_pixels * pix_clk_time;
+hr_back_porch_ns = emulatorParams.hr_back_porch_pixels * pix_clk_time;
+hr_active_ns = enulatorParams.hr_active_pixels * pix_clk_time;
+hr_front_porch_ns = emulatorParams.hr_front_porch_pixels * pix_clk_time;
+hr_line_ns = hr_sync_ns + hr_back_porch_ns + hr_active_ns + hr_front_porch_ns;
 %hr_clk_fre = 1 / hr_clk;
 
-hr_sync_ponits = fix(hr_sync / sampling_clk_time);
-hr_back_porch_ponits = fix(hr_back_porch / sampling_clk_time);
-hr_active_ponits = fix(hr_active / sampling_clk_time);
-hr_front_porch_ponits = fix(hr_front_porch / sampling_clk_time);
+% Our emulator runs at a particular overall clock rate, which means that we
+% may not be able to exactly emulate all of the specified numbers of
+% pixels.  Here we compute how close we actually come to the desired
+% values, using "points" as the variable name rather than "pixels" to
+% indicate what we're doing.  If we set the emulation frequency equal to
+% the clock frequency, then things should come out OK.
+hr_sync_points = fix(hr_sync_ns / sampling_clk_time);
+hr_back_porch_points = fix(hr_back_porch_ns / sampling_clk_time);
+hr_active_points = fix(hr_active_ns / sampling_clk_time);
+hr_front_porch_points = fix(hr_front_porch_ns / sampling_clk_time);
+hr_line_points = hr_sync_points + hr_back_porch_points + hr_active_points + hr_front_porch_points;
 
-hr_len = hr_sync_ponits + hr_back_porch_ponits + hr_active_ponits + hr_front_porch_ponits;
-
-vt_sync = 10 * hr_clk;
-vt_back_porch = 136 * hr_clk;
-vt_active = 645 * hr_clk;
-vt_front_porch = 133 * hr_clk;
-
-vt_clk = vt_sync + vt_back_porch + vt_active + vt_front_porch;
+% Times in nanosceonds for vertical
+vt_sync_ns = emulatorParams.vt_sync_pixels * hr_line_ns;
+vt_back_porch_ns = emulatorParams.vt_back_porch_pixels * hr_line_ns;
+vt_active_ns = emulatorParams.vt_active_pixels * hr_line_ns;
+vt_front_porch_ns = emulatorParams.vt_front_porch_pixels * hr_line_ns;
+vt_clk_ns = vt_sync_ns + vt_back_porch_ns + vt_active_ns + vt_front_porch_ns;
 %vt_clk_fre = 1 / vt_clk;
 
-vt_sync_ponits = fix(vt_sync / sampling_clk_time);
-vt_back_porch_ponits = fix(vt_back_porch / sampling_clk_time);
-vt_active_ponits = fix(vt_active / sampling_clk_time);
-vt_front_porch_ponits = fix(vt_front_porch / sampling_clk_time);
+% Again, get our approximation given overall sampling clock rate.
+vt_sync_points = fix(vt_sync_ns / sampling_clk_time);
+vt_back_porch_points = fix(vt_back_porch_ns / sampling_clk_time);
+vt_active_points = fix(vt_active_ns / sampling_clk_time);
+vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
+vt_len_points = vt_sync_points + vt_back_porch_points + vt_active_points + vt_front_porch_points;
 
-vt_len = vt_sync_ponits + vt_back_porch_ponits + vt_active_ponits + vt_front_porch_ponits;
-
-
-
-% helper maps to use label names for registers and errors
+%% Helper maps to use label names for registers and errors
 mRegs = spcMCreateRegMap ();
 mErrors = spcMCreateErrorMap ();
 
-% ***** init card and store infos in cardInfo struct *****
+%% Init card and store infos in cardInfo struct
 [success, cardInfo] = spcMInitCardByIdx (0);
-
 if (success == true)
     % ----- print info about the board -----
     cardInfoText = spcMPrintCardInfo (cardInfo);
@@ -68,32 +104,25 @@ else
     return;
 end
 
-% ----- check whether we support this card type in the example -----
+%% Check whether we support this card type 
 if ((cardInfo.cardFunction ~= mRegs('SPCM_TYPE_AO')) & (cardInfo.cardFunction ~= mRegs('SPCM_TYPE_DO')) & (cardInfo.cardFunction ~= mRegs('SPCM_TYPE_DIO')))
     spcMErrorMessageStdOut (cardInfo, 'Error: Card function not supported by this example\n', false);
     return;
 end
 
-% ----- replay mode selected by user -----
-fprintf ('\nPlease select the output mode:\n');
-fprintf ('  (1) Singleshot\n  (2) Continuous\n  (3) Single Restart\n  (0) Quit\n');
-
-replayMode = 2;%input ('Select: ');
-
+%% Set replay mode to continuous. Could also choose singleshot (1) or single
+% restart (3).
+replayMode = 2;
 if (replayMode < 1) | (replayMode > 3) 
     spcMCloseCard (cardInfo);
     return;
 end
 
-% ***** do card settings *****
+%% Do card settings
 timeout_ms = 10000;
+samplerate = sampling_clk_frequency;
 
-samplerate = 50000000;
-if cardInfo.isM4i == true
-    samplerate = 50000000;
-end
-
-% ----- set the samplerate and internal PLL, no clock output -----
+% Set the samplerate and internal PLL, no clock output 
 [success, cardInfo] = spcMSetupClockPLL (cardInfo, samplerate, 0);  % clock output : enable = 1, disable = 0
 if (success == false)
     spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupClockPLL:\n\t', true);
@@ -101,7 +130,7 @@ if (success == false)
 end
 fprintf ('\n ..... Sampling rate set to %.1f MHz\n', cardInfo.setSamplerate / 1000000);
 
-% ----- set channel mask for max channels -----
+% Set channel mask for max channels
 if cardInfo.maxChannels == 64
     chMaskH = hex2dec ('FFFFFFFF');
     chMaskL = hex2dec ('FFFFFFFF');
@@ -110,11 +139,12 @@ else
     chMaskL = bitshift (1, cardInfo.maxChannels) - 1;
 end
 
+% Handle desired replay mode
 switch replayMode
     
     case 1
         % ----- singleshot replay -----
-        [success, cardInfo] = spcMSetupModeRepStdSingle (cardInfo, chMaskH, chMaskL, vt_len);
+        [success, cardInfo] = spcMSetupModeRepStdSingle (cardInfo, chMaskH, chMaskL, vt_len_points);
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupModeRecStdSingle:\n\t', true);
             return;
@@ -131,10 +161,7 @@ switch replayMode
         
     case 2
         % ----- endless continuous mode -----
-        %[success, cardInfo] = spcMSetupModeRepStdLoops (cardInfo, chMaskH, chMaskL, 64 * 1024, 0);
-        %vt_len
-        [success, cardInfo] = spcMSetupModeRepStdLoops (cardInfo, chMaskH, chMaskL, vt_len, 0);
-        
+        [success, cardInfo] = spcMSetupModeRepStdLoops (cardInfo, chMaskH, chMaskL, vt_len_points, 0);
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupModeRecStdSingle:\n\t', true);
             return;
@@ -175,7 +202,7 @@ switch cardInfo.cardFunction
     case mRegs('SPCM_TYPE_AO')
         % ----- program all output channels to +/- 1 V with no offset and no filter -----
         for i=0 : cardInfo.maxChannels-1  
-            [success, cardInfo] = spcMSetupAnalogOutputChannel (cardInfo, i, 3000, 0, 0, 16, 0, 0); % 16 = SPCM_STOPLVL_ZERO, doubleOut = disabled, differential = disabled
+            [success, cardInfo] = spcMSetupAnalogOutputChannel (cardInfo, i, emulatorParams.outputMillivolts, 0, 0, 16, 0, 0); % 16 = SPCM_STOPLVL_ZERO, doubleOut = disabled, differential = disabled
             if (success == false)
                 spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupInputChannel:\n\t', true);
                 return;
@@ -199,7 +226,7 @@ if cardInfo.cardFunction == mRegs('SPCM_TYPE_AO')
     if cardInfo.setChannels >= 1
         % ----- ch0 = sine waveform -----tyh1_spcMCalcSignal
         %[success, cardInfo, Dat_Ch0] = spcMCalcSignal (cardInfo, cardInfo.setMemsize, 2, 1, 100);
-        [success, cardInfo, Dat_Ch0] = tyh1_spcMCalcSignal (cardInfo, cardInfo.setMemsize, 2, 924, 100);
+        [success, cardInfo, Dat_Ch0] = aoemSpcMCalcSignal(cardInfo, cardInfo.setMemsize, 2, 924, 100);
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMCalcSignal:\n\t', true);
             return;
