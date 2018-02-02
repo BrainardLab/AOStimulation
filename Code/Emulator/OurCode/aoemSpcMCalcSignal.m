@@ -15,35 +15,17 @@
 
 % NEED TO PASS WIDTH OF PULSE FOR CASE 2
 
-function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape, loops, gainP,sync_num)
+function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
     
     signal = zeros (1, len);
 
-    if (gainP < 0) | (gainP > 100)
-        cardInfo.errorText = 'spcMCalcSignal: gainP must be a value between 0 and 100';
-        success = false;
-        return;
-    end
-
-    if (shape < 1) | (shape > 4)
-        cardInfo.errorText = 'spcMCalcSignal: shape must set to 1 (sine), 2 (rectangel), 3 (triangel), 4 (sawtooth)';
-        success = false;
-        return;
-    end
-    
+        
     % ----- calculate resolution -----
-    switch cardInfo.bytesPerSample
-         
-         case 1
-             maxFS = 127;
-             minFS = -128;
-             scale = 127 * gainP / 100;
-             
-         case 2
-             maxFS = 8191;
-             minFS = -8192;
-             scale = 8191 * gainP / 100;
-     end
+    
+    maxFS = 8191;
+    minFS = -8192;
+    scale = 8191 * gainP / 100;
+   
     
      % ----- calculate waveform -----
      block = len / loops;
@@ -63,7 +45,7 @@ function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape,
     
             % ----- rectangle -----
             case 2
-                if posInBlock < sync_num%blockHalf %%/1000/2
+                if posInBlock < noSync%blockHalf %%/1000/2
                     signal (1, i) = maxFS;
                 else
                     signal (1, i) = minFS;
@@ -83,4 +65,4 @@ function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape,
         end    
     end
     
-    success = true;
+   
