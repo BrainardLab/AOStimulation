@@ -15,7 +15,7 @@
 
 % NEED TO PASS WIDTH OF PULSE FOR CASE 2
 
-function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape, loops, gainP)
+function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape, loops, gainP,sync_num)
     
     signal = zeros (1, len);
 
@@ -63,7 +63,7 @@ function [success, cardInfo, signal] = aoemSpcMCalcSignal (cardInfo, len, shape,
     
             % ----- rectangle -----
             case 2
-                if posInBlock < 20%blockHalf %%/1000/2
+                if posInBlock < sync_num%blockHalf %%/1000/2
                     signal (1, i) = maxFS;
                 else
                     signal (1, i) = minFS;
