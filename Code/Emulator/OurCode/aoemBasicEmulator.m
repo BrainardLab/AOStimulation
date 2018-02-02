@@ -30,6 +30,7 @@ clear;
 sampling_clk_frequency = 38.4910 * 10^6;  
 dac_maxFS = 8191;
 dac_minFS = -8192;
+
 % Emulation parameters
 %
 % Master clock frequency being emulated, and corrsponding clock time 
@@ -47,6 +48,7 @@ emulatorParams.vt_back_porch_pixels = 136;
 emulatorParams.vt_active_pixels = 645;
 emulatorParams.vt_front_porch_pixels = 133;
 emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels+emulatorParams.vt_front_porch_pixels;
+
 % Output maximum voltage
 emulatorParams.outputMillivolts = 3000;
 
@@ -91,8 +93,7 @@ vt_active_points = fix(vt_active_ns / sampling_clk_time);
 vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
 vt_len_points = vt_sync_points + vt_back_porch_points + vt_active_points + vt_front_porch_points;
 
-
-%get the input movie. Right now we just use one frame for test
+% Get the input movie. Right now we just use one frame for test
 video = VideoReader('D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\TestH.avi');
 nFrames = video.NumberOfFrames;   %frame number
 H = video.Height;     
