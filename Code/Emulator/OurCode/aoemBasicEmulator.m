@@ -27,8 +27,9 @@ clear;
 %% Define parameters
 
 % DA card sampling rate and clock time.  Clock time is in ns.
-sampling_clk_frequency = 50 * 10^6;  
-
+sampling_clk_frequency = 38.4910 * 10^6;  
+dac_maxFS = 8191;
+dac_minFS = -8192;
 % Emulation parameters
 %
 % Master clock frequency being emulated, and corrsponding clock time 
@@ -39,12 +40,13 @@ emulatorParams.hr_sync_pixels = 15;
 emulatorParams.hr_back_porch_pixels = 369;
 emulatorParams.hr_active_pixels = 721;
 emulatorParams.hr_front_porch_pixels = 1395;
+emulatorParams.hr_pixels = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+emulatorParams.hr_active_pixels+emulatorParams.hr_front_porch_pixels;
 
 emulatorParams.vt_sync_pixels = 10;
 emulatorParams.vt_back_porch_pixels = 136;
 emulatorParams.vt_active_pixels = 645;
 emulatorParams.vt_front_porch_pixels = 133;
-
+emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels+emulatorParams.vt_front_porch_pixels;
 % Output maximum voltage
 emulatorParams.outputMillivolts = 3000;
 
@@ -52,12 +54,12 @@ emulatorParams.outputMillivolts = 3000;
 
 % Clock times in ns
 sampling_clk_time = 10^9/sampling_clk_frequency;
-pix_clk_time = 10^9/emulatorParams.pix_clk;
+pix_clk_time = 10^9/emulatorParams.pix_clk_frequency;
 
 % Times in nanoseconds for horizontal 
 hr_sync_ns = emulatorParams.hr_sync_pixels * pix_clk_time;
 hr_back_porch_ns = emulatorParams.hr_back_porch_pixels * pix_clk_time;
-hr_active_ns = enulatorParams.hr_active_pixels * pix_clk_time;
+hr_active_ns = emulatorParams.hr_active_pixels * pix_clk_time;
 hr_front_porch_ns = emulatorParams.hr_front_porch_pixels * pix_clk_time;
 hr_line_ns = hr_sync_ns + hr_back_porch_ns + hr_active_ns + hr_front_porch_ns;
 %hr_clk_fre = 1 / hr_clk;
@@ -89,6 +91,39 @@ vt_active_points = fix(vt_active_ns / sampling_clk_time);
 vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
 vt_len_points = vt_sync_points + vt_back_porch_points + vt_active_points + vt_front_porch_points;
 
+
+%get the input movie. Right now we just use one frame for test
+video = VideoReader('D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\TestH.avi');
+nFrames = video.NumberOfFrames;   %frame number
+H = video.Height;     
+W = video.Width;      
+%Rate = video.FrameRate;
+% Preallocate movie structure.
+mov(1:nFrames) = struct('cdata',zeros(H,W,3,'uint8'),'colormap',[]);
+mov(2).cdata = read(video,2);
+P = mov(2).cdata;
+%our scan array is emulatorParams.vt_pixels * emulatorParams.hr_pixels, active image is in the
+%middle (emulatorParams.vt_active_pixels * emulatorParams.hr_active_pixels)
+active_col_start = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+1;
+active_col_end = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+emulatorParams.hr_active_pixels
+active_row_start = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+1;
+active_row_end = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels
+
+movie_frame_array = zeros(emulatorParams.vt_pixels,emulatorParams.hr_pixels);
+temp_x=1;
+temp_y=1;
+for i = active_row_start : active_row_end
+    for j = active_col_start : active_col_end
+        
+        movie_frame_array(i,j) = P(temp_x,temp_y);
+        temp_y = temp_y+1;
+    end
+    temp_x = temp_x +1;
+    temp_y = 1;
+end
+
+movie_frame_seq = reshape(movie_frame_array',1,emulatorParams.vt_pixels * emulatorParams.hr_pixels);
+movie_frame_seq = movie_frame_seq*2^5;
 %% Helper maps to use label names for registers and errors
 mRegs = spcMCreateRegMap ();
 mErrors = spcMCreateErrorMap ();
@@ -226,7 +261,8 @@ if cardInfo.cardFunction == mRegs('SPCM_TYPE_AO')
     if cardInfo.setChannels >= 1
         % ----- ch0 = sine waveform -----tyh1_spcMCalcSignal
         %[success, cardInfo, Dat_Ch0] = spcMCalcSignal (cardInfo, cardInfo.setMemsize, 2, 1, 100);
-        [success, cardInfo, Dat_Ch0] = aoemSpcMCalcSignal(cardInfo, cardInfo.setMemsize, 2, 924, 100);
+        cardInfo.setMemsize = vt_len_points;
+        [success, cardInfo, Dat_Ch0] = aoemSpcMCalcSignal(cardInfo, cardInfo.setMemsize, 2, 924, 100,20);
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMCalcSignal:\n\t', true);
             return;
@@ -235,7 +271,7 @@ if cardInfo.cardFunction == mRegs('SPCM_TYPE_AO')
 
     if cardInfo.setChannels >= 2
         % ----- ch1 = rectangle waveform -----
-        [success, cardInfo, Dat_Ch1] = spcMCalcSignal (cardInfo, cardInfo.setMemsize, 1, 1, 100);
+        [success, cardInfo, Dat_Ch1] = aoemSpcMCalcSignal(cardInfo, cardInfo.setMemsize, 2, 1, 100,25000);
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMCalcSignal:\n\t', true);
             return;
@@ -245,6 +281,7 @@ if cardInfo.cardFunction == mRegs('SPCM_TYPE_AO')
     if cardInfo.setChannels == 4
         % ----- ch2 = triangle waveform -----
         [success, cardInfo, Dat_Ch2] = spcMCalcSignal (cardInfo, cardInfo.setMemsize, 3, 1, 100);
+        Dat_Ch2 = movie_frame_seq;
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMCalcSignal:\n\t', true);
             return;
@@ -252,6 +289,7 @@ if cardInfo.cardFunction == mRegs('SPCM_TYPE_AO')
     
         % ----- ch3 = sawtooth waveform -----
         [success, cardInfo, Dat_Ch3] = spcMCalcSignal (cardInfo, cardInfo.setMemsize, 4, 1, 100);
+        
         if (success == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMCalcSignal:\n\t', true);
             return;
