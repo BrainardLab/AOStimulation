@@ -34,9 +34,9 @@ P = mov(2).cdata;
 %our scan array is emulatorParams.vt_pixels * emulatorParams.hr_pixels, active image is in the
 %middle (emulatorParams.vt_active_pixels * emulatorParams.hr_active_pixels)
 active_col_start = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+1;
-active_col_end = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+emulatorParams.hr_active_pixels
+active_col_end = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+emulatorParams.hr_active_pixels;
 active_row_start = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+1;
-active_row_end = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels
+active_row_end = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels;
 
 movie_frame_array = zeros(emulatorParams.vt_pixels,emulatorParams.hr_pixels);
 temp_x=1;

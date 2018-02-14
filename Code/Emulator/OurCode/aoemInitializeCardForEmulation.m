@@ -1,4 +1,4 @@
-function [status,cardInfo] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize)
+function [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,timeout_ms)
 % Initialize the D/A card to be ready to go for our emulator
 %
 % Syntax:
@@ -14,20 +14,23 @@ function [status,cardInfo] = aoemInitializeCardForEmulation(nOutputChannels,emul
 %                         Typically three if there is one imaging channel,
 %                         since we will have h sync, v sync, and pixels.
 %                         But could be more in the future.
-%    sampling_clk_frequency - How fast are we running the board.
-% 
+%    sampling_clk_frequency    -    How fast are we running the board.
+%    memSize     -    memsize for sampling one frame data
+%    timeout_ms    -    when timeout card stop
 % Outputs:
 %    status      - Boolean.  True means success, false means failure of
 %                  some sort.
 %    cardInfo    - DA card information  
+%    mRegs - label names for registers
 % Optional key/value pairs:
 %    None.
 %
 % See also:
 %
-
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
+
+
 %% Helper maps to use label names for registers and errors
 mRegs = spcMCreateRegMap ();
 mErrors = spcMCreateErrorMap ();
@@ -58,7 +61,7 @@ if (replayMode < 1) | (replayMode > 3)
 end
 
 %% Do card settings
-timeout_ms = 10000;
+
 samplerate = sampling_clk_frequency;
 
 % Set the samplerate and internal PLL, no clock output 
@@ -118,7 +121,7 @@ switch replayMode
 
     case 3
         % ----- single restart (one signal on every trigger edge) -----
-        [status, cardInfo] = spcMSetupModeRepStdSingleRestart (cardInfo, chMaskH, chMaskL, 64 * 1024, 0);
+        [status, cardInfo] = spcMSetupModeRepStdSingleRestart (cardInfo, chMaskH, chMaskL, memSize, 0);
         if (status == false)
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupTrigSoftware:\n\t', true);
             return;
@@ -141,7 +144,7 @@ switch cardInfo.cardFunction
     case mRegs('SPCM_TYPE_AO')
         % ----- program all output channels to +/- 1 V with no offset and no filter -----
         for i=0 : cardInfo.maxChannels-1  
-            [status, cardInfo] = spcMSetupAnalogOutputChannel (cardInfo, i, emulatorParams.outputMillivolts, 0, 0, 16, 0, 0); % 16 = SPCM_STOPLVL_ZERO, doubleOut = disabled, differential = disabled
+            [status, cardInfo] = spcMSetupAnalogOutputChannel (cardInfo, i, emulatorParams.outputMillivolts(i+1), 0, 0, 16, 0, 0); % 16 = SPCM_STOPLVL_ZERO, doubleOut = disabled, differential = disabled
             if (status == false)
                 spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupInputChannel:\n\t', true);
                 return;

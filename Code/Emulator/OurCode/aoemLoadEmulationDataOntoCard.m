@@ -10,22 +10,21 @@ function [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorPara
 %    does the loading.
 %
 % Inputs:
-%    nOutputChannels    - Number of AOSLO outputs being emulated.
-%                         Typically three if there is one imaging channel,
-%                         since we will have h sync, v sync, and pixels.
-%                         But could be more in the future.
+%    cardInfo    -    DA card information
+%    emulatorParams    -    emulator parameters
 %    sampling_clk_frequency - How fast are we running the board.
+%    memSize    -    memsize for sampling one frame data
 % 
 % Outputs:
 %    status      - Boolean.  True means success, false means failure of
 %                  some sort.
+%    cardInfo    -  DA card information
 %
 % Optional key/value pairs:
 %    None.
 %
 % See also:
 %
-
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 
@@ -51,4 +50,7 @@ if (errorCode ~= 0)
     [status, cardInfo] = spcMCheckSetError (errorCode, cardInfo);
     spcMErrorMessageStdOut (cardInfo, 'Error: spcm_dwSetData:\n\t', true);
     return;
+else
+    status = 0;
+end
 end

@@ -1,3 +1,26 @@
+function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
+% Read in a movie acquired on the real AOSLO for us to play back
+%
+% Syntax:
+%    signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
+% Description:
+%    Read in a previously acquired movie that we have stored, and put it
+%    into a form to play back.
+%
+% Get the input movie. Right now we just use one frame for test
+% Inputs:
+%    movieFileName    - the name of the movie  
+%    emulatorParams    - emulator parameters
+% 
+% Outputs:
+%    movie      - one x N array  
+% Optional key/value pairs:
+%    None.
+%
+% See also:
+%
+% History:
+%   02/02/18  tyh, dhb   Wrote header comments.
 %**************************************************************************
 % Spectrum Matlab Library Package               (c) Spectrum GmbH , 11/2006
 %**************************************************************************
@@ -7,15 +30,15 @@
 %**************************************************************************
 % spcMCalcSignal:
 % Calculates waveform data 
-% shape: 1 : sine
-%        2 : rectangel
+% shape: 1 : rectangel
+%        2 : invert rectangel
 %        3 : triangel
 %        4 : sawtooth
 %**************************************************************************
 
 % NEED TO PASS WIDTH OF PULSE FOR CASE 2
 
-function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
+
     
     signal = zeros (1, len);
 
@@ -39,9 +62,13 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
         
         switch shape
             
-            % ----- sine -----
+            % ----- rectangle -----
             case 1
-                signal (1, i) = scale * sin (sineXScale*i);
+                if posInBlock < noSync%blockHalf %%/1000/2
+                    signal (1, i) = minFS;
+                else
+                    signal (1, i) = maxFS;
+                end
     
             % ----- rectangle -----
             case 2

@@ -1,31 +1,28 @@
 function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_clk_frequency,memSize)
-% Load the time series of emulation data onto the card and get it ready to go.
+% Create the data seqence for movie, horizontal, vertical.
 %
 % Syntax:
-%    status = aoemGenerateSignal(  )
+%    [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_clk_frequency,memSize)
 %
 % Description:
-%    We work by first loading the data onto the D/A card's onboard memory
-%    and then later giving it a go signal to ship it out.  This routine
-%    does the loading.
+%    we create signal to emulate the real signals from oscilloscope and
+%    timing parateres.
 %
 % Inputs:
-%    nOutputChannels    - Number of AOSLO outputs being emulated.
-%                         Typically three if there is one imaging channel,
-%                         since we will have h sync, v sync, and pixels.
-%                         But could be more in the future.
+%    emulatorParams    -    emulator parameters
 %    sampling_clk_frequency - How fast are we running the board.
+%    memSize    -    memsize for sampling one frame data
 % 
 % Outputs:
-%    status      - Boolean.  True means success, false means failure of
-%                  some sort.
+%    movieData      - movie data
+%    hrData    -  horizontal sync signal
+%    vtData    -  vertical sync signal
 %
 % Optional key/value pairs:
 %    None.
 %
 % See also:
 %
-
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 
@@ -35,11 +32,13 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_
 
     
     % ----- ch0 = horizontal sync
-    %[success, cardInfo, Dat_Ch0] = spcMCalcSignal (cardInfo, cardInfo.setMemsize, 2, 1, 100);
-    hrData = aoemSpcMCalcSignal(memSize, 2, 924, 100,20);
+    nPulseWidth = memSize / emulatorParams.vt_pixels / 2;
+    hrData = aoemSpcMCalcSignal(memSize, 2, emulatorParams.vt_pixels, 100,nPulseWidth);
         
    % ----- ch1 = vertical sync
-    vtData = aoemSpcMCalcSignal(memSize, 2, 1, 100,25000);
+    %%from the measurement, 5ms pulse width for vertical
+    nPulseWidth = (emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels)*emulatorParams.hr_pixels / 2;
+    vtData = aoemSpcMCalcSignal(memSize, 1, 1, 100,nPulseWidth);
         
    % ----- ch2 = movie waveform -----
     movieFileName = 'D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\TestH.avi';

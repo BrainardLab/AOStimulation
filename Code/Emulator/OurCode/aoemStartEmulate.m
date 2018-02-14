@@ -1,13 +1,22 @@
 function cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms)
-% Start the signals going
+% Start the card after it is ready to go.
 %
 % Syntax:
+%    cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms)
 %
 % Description:
-%    Once the data are loaded onto the card, we can tell the card to play
-%    them out the D/A board.  This function gives the go command.
-
-
+%    start the card
+%
+% Inputs:
+%    cardInfo    -    DA card information
+%    mRegs - label names for registers
+%    timeout_ms - stop time
+% Outputs:
+%    cardInfo    -    DA card information
+%
+% Optional key/value pairs:
+%    None.
+%
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 errorCode = spcm_dwSetParam_i32 (cardInfo.hDrv, mRegs('SPC_TIMEOUT'), timeout_ms);

@@ -1,8 +1,20 @@
 function status = aoemCloseCard(cardInfo)
-% Close down the D/A card gracefully
+% close card.
 %
 % Syntax:
+%    status = aoemCloseCard(cardInfo)
 %
 % Description:
-%    This command closes down the card when we are finished.
+%    close the card
+%
+% Inputs:
+%    
+% Outputs:
+%    
+%
+% Optional key/value pairs:
+%    None.
+%
+% History:
+%   02/02/18  tyh, dhb   Wrote header comments.
 spcMCloseCard (cardInfo);

@@ -31,6 +31,8 @@ sampling_clk_frequency = 38.4910 * 10^6;
 dac_maxFS = 8191;
 dac_minFS = -8192;
 nOutputChannels = 4;
+
+timeout_ms = 10000;
 % Emulation parameters
 %
 % Master clock frequency being emulated, and corrsponding clock time 
@@ -50,12 +52,12 @@ emulatorParams.vt_front_porch_pixels = 133;
 emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels+emulatorParams.vt_front_porch_pixels;
 
 % Output maximum voltage
-emulatorParams.outputMillivolts = 3000;
+emulatorParams.outputMillivolts = [3000 3000 3000 3000]; % [ch0 ch1 ch2 ch3]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency);
 
-[status,cardInfo] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize);
+[status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,timeout_ms);
 
 [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorParams,sampling_clk_frequency,memSize);
 

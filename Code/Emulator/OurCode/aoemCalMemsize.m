@@ -2,7 +2,7 @@ function memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
 % Load the time series of emulation data onto the card and get it ready to go.
 %
 % Syntax:
-%    status = aoemGenerateSignal(  )
+%    memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
 %
 % Description:
 %    We work by first loading the data onto the D/A card's onboard memory
