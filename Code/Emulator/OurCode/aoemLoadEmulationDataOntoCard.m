@@ -1,4 +1,4 @@
-function [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorParams,sampling_clk_frequency,memSize)
+function [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorParams,sampleParas,memSize)
 % Load the time series of emulation data onto the card and get it ready to go.
 %
 % Syntax:
@@ -12,7 +12,7 @@ function [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorPara
 % Inputs:
 %    cardInfo    -    DA card information
 %    emulatorParams    -    emulator parameters
-%    sampling_clk_frequency - How fast are we running the board.
+%    sampleParas - sampling points.
 %    memSize    -    memsize for sampling one frame data
 % 
 % Outputs:
@@ -30,7 +30,7 @@ function [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorPara
 
     % ***** calculate waveforms *****
 
-    [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_clk_frequency,memSize);
+    [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampleParas,memSize);
     
 
     switch cardInfo.setChannels

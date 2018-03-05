@@ -1,4 +1,4 @@
-function memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
+function [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
 % Load the time series of emulation data onto the card and get it ready to go.
 %
 % Syntax:
@@ -17,8 +17,8 @@ function memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
 %    sampling_clk_frequency - How fast are we running the board.
 % 
 % Outputs:
-%    status      - Boolean.  True means success, false means failure of
-%                  some sort.
+%    memSize      - sampling memery size
+%    sampleParas  - sampling points for Hsync / Vsync
 %
 % Optional key/value pairs:
 %    None.
@@ -50,11 +50,11 @@ hr_line_ns = hr_sync_ns + hr_back_porch_ns + hr_active_ns + hr_front_porch_ns;
 % values, using "points" as the variable name rather than "pixels" to
 % indicate what we're doing.  If we set the emulation frequency equal to
 % the clock frequency, then things should come out OK.
-hr_sync_points = fix(hr_sync_ns / sampling_clk_time);
-hr_back_porch_points = fix(hr_back_porch_ns / sampling_clk_time);
-hr_active_points = fix(hr_active_ns / sampling_clk_time);
-hr_front_porch_points = fix(hr_front_porch_ns / sampling_clk_time);
-hr_line_points = hr_sync_points + hr_back_porch_points + hr_active_points + hr_front_porch_points;
+sampleParas.hr_sync_points = fix(hr_sync_ns / sampling_clk_time);
+sampleParas.hr_back_porch_points = fix(hr_back_porch_ns / sampling_clk_time);
+sampleParas.hr_active_points = fix(hr_active_ns / sampling_clk_time);
+sampleParas.hr_front_porch_points = fix(hr_front_porch_ns / sampling_clk_time);
+sampleParas.hr_line_points = sampleParas.hr_sync_points + sampleParas.hr_back_porch_points + sampleParas.hr_active_points + sampleParas.hr_front_porch_points;
 
 % Times in nanosceonds for vertical
 vt_sync_ns = emulatorParams.vt_sync_pixels * hr_line_ns;
@@ -65,11 +65,11 @@ vt_clk_ns = vt_sync_ns + vt_back_porch_ns + vt_active_ns + vt_front_porch_ns;
 %vt_clk_fre = 1 / vt_clk;
 
 % Again, get our approximation given overall sampling clock rate.
-vt_sync_points = fix(vt_sync_ns / sampling_clk_time);
-vt_back_porch_points = fix(vt_back_porch_ns / sampling_clk_time);
-vt_active_points = fix(vt_active_ns / sampling_clk_time);
-vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
-vt_len_points = vt_sync_points + vt_back_porch_points + vt_active_points + vt_front_porch_points;
+sampleParas.vt_sync_points = fix(vt_sync_ns / sampling_clk_time);
+sampleParas.vt_back_porch_points = fix(vt_back_porch_ns / sampling_clk_time);
+sampleParas.vt_active_points = fix(vt_active_ns / sampling_clk_time);
+sampleParas.vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
+sampleParas.vt_len_points = sampleParas.vt_sync_points + sampleParas.vt_back_porch_points + sampleParas.vt_active_points + sampleParas.vt_front_porch_points;
 
-memSize = vt_len_points;
+memSize = sampleParas.hr_line_points*emulatorParams.vt_pixels;
         

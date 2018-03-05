@@ -1,4 +1,4 @@
-function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_clk_frequency,memSize)
+function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampleParas,memSize)
 % Create the data seqence for movie, horizontal, vertical.
 %
 % Syntax:
@@ -32,15 +32,17 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_
 
     
     % ----- ch0 = horizontal sync
-    nPulseWidth = memSize / emulatorParams.vt_pixels / 2;
+    nPulseWidth = fix(memSize / emulatorParams.vt_pixels / 2);
     hrData = aoemSpcMCalcSignal(memSize, 2, emulatorParams.vt_pixels, 100,nPulseWidth);
         
    % ----- ch1 = vertical sync
     %%from the measurement, 5ms pulse width for vertical
-    nPulseWidth = (emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels)*emulatorParams.hr_pixels / 2;
-    vtData = aoemSpcMCalcSignal(memSize, 1, 1, 100,nPulseWidth);
-        
+
+    nPulseWidth = (sampleParas.vt_sync_points+sampleParas.vt_back_porch_points) / 2;
+    %vtData = aoemSpcMCalcSignal(memSize, 4, 1, 100,nPulseWidth);
+    %%sawtooth
+    vtData = aoemSpcMCalcSignal(memSize, 1, 1, 100,nPulseWidth);     %pulse
    % ----- ch2 = movie waveform -----
     movieFileName = 'D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\TestH.avi';
-    movieData = aoemReadMoveForPlayback(movieFileName,emulatorParams);
+    movieData = aoemReadMoveForPlayback(movieFileName,emulatorParams,sampleParas);
         

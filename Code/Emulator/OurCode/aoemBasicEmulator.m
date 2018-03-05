@@ -27,12 +27,12 @@ clear;
 %% Define parameters
 
 % DA card sampling rate and clock time.  Clock time is in ns.
-sampling_clk_frequency = 38.4910 * 10^6;  
+sampling_clk_frequency = 38.4910 * 10^6;   %38.4910
 dac_maxFS = 8191;
 dac_minFS = -8192;
 nOutputChannels = 4;
 
-timeout_ms = 10000;
+timeout_ms = 30*1000;  %%120000
 % Emulation parameters
 %
 % Master clock frequency being emulated, and corrsponding clock time 
@@ -52,14 +52,15 @@ emulatorParams.vt_front_porch_pixels = 133;
 emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels+emulatorParams.vt_front_porch_pixels;
 
 % Output maximum voltage
-emulatorParams.outputMillivolts = [3000 3000 3000 3000]; % [ch0 ch1 ch2 ch3]
+emulatorParams.outputMillivolts = [2000 3000 100 3000]; % [ch0 ch1 ch2 ch3]
+emulatorParams.outputOffsetvolts = [0 0 0 0];  %offset adjust
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency);
+[memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency);
 
 [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,timeout_ms);
 
-[status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorParams,sampling_clk_frequency,memSize);
+[status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorParams,sampleParas,memSize);
 
 % ----- we'll start and wait until the card has finished or until a timeout occurs -----
 cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms);

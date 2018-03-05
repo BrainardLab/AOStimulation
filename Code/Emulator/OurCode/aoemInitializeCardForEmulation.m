@@ -144,7 +144,7 @@ switch cardInfo.cardFunction
     case mRegs('SPCM_TYPE_AO')
         % ----- program all output channels to +/- 1 V with no offset and no filter -----
         for i=0 : cardInfo.maxChannels-1  
-            [status, cardInfo] = spcMSetupAnalogOutputChannel (cardInfo, i, emulatorParams.outputMillivolts(i+1), 0, 0, 16, 0, 0); % 16 = SPCM_STOPLVL_ZERO, doubleOut = disabled, differential = disabled
+            [status, cardInfo] = spcMSetupAnalogOutputChannel (cardInfo, i, emulatorParams.outputMillivolts(i+1), emulatorParams.outputOffsetvolts(i+1), 0, 16, 0, 0); % 16 = SPCM_STOPLVL_ZERO, doubleOut = disabled, differential = disabled
             if (status == false)
                 spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupInputChannel:\n\t', true);
                 return;

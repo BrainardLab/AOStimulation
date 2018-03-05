@@ -42,7 +42,9 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
     
     signal = zeros (1, len);
 
-        
+    
+  
+    
     % ----- calculate resolution -----
     
     maxFS = 8191;
@@ -54,8 +56,18 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
      block = len / loops;
      blockHalf = block / 2;
      sineXScale = 2 * pi / len * loops;
-     span = maxFS - minFS;
+     %span = maxFS - minFS;
+     span = maxFS - 0;
+     outputVolt=3;
      
+     baseVoltForSawtooth=2;
+     baseVolt=outputVolt-baseVoltForSawtooth;
+     
+     span1 = span*baseVoltForSawtooth/outputVolt;
+     span2=span*baseVolt/outputVolt;
+     
+     minFS = 0 ; 
+     %%%%%%%%%%%%%%%%%
      for i=1 : len
     
         posInBlock = mod (i, block);
@@ -65,7 +77,7 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
             % ----- rectangle -----
             case 1
                 if posInBlock < noSync%blockHalf %%/1000/2
-                    signal (1, i) = minFS;
+                    signal (1, i) = 0; %minFS;
                 else
                     signal (1, i) = maxFS;
                 end
@@ -75,7 +87,7 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
                 if posInBlock < noSync%blockHalf %%/1000/2
                     signal (1, i) = maxFS;
                 else
-                    signal (1, i) = minFS;
+                    signal (1, i) = 0; %minFS;
                 end
             
            % ----- triangel -----
@@ -87,8 +99,13 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
               end     
          
           % ----- sawtooth -----
-          case 4            
-            signal (1, i) = minFS + posInBlock * span / block;
+          case 4      
+            if posInBlock < noSync
+                signal (1, i) = fix(minFS + span2 + posInBlock * span1/noSync);
+            else
+                signal (1, i) = fix(minFS + span2 + span1 - (posInBlock-noSync+1) * span1/(len-noSync));
+            end
+            %signal (1, i) = minFS + posInBlock * span / block;
         end    
     end
     
