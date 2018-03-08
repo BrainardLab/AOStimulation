@@ -2,7 +2,7 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,samplePar
 % Create the data seqence for movie, horizontal, vertical.
 %
 % Syntax:
-%    [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampling_clk_frequency,memSize)
+%    [movieData,hrData,vtData] = aoemGenerateSignal()
 %
 % Description:
 %    we create signal to emulate the real signals from oscilloscope and
@@ -10,7 +10,7 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,samplePar
 %
 % Inputs:
 %    emulatorParams    -    emulator parameters
-%    sampling_clk_frequency - How fast are we running the board.
+%    sampleParas - sampling points for Hsync / Vsync
 %    memSize    -    memsize for sampling one frame data
 % 
 % Outputs:

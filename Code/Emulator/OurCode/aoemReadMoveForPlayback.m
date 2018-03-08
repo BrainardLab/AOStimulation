@@ -2,7 +2,7 @@ function movie = aoemReadMoveForPlayback(movieFileName,emulatorParams,samplePara
 % Read in a movie acquired on the real AOSLO for us to play back
 %
 % Syntax:
-%    movie = aoemReadMoveForPlayback(movieFileName,emulatorParams)
+%    movie = aoemReadMoveForPlayback()
 % Description:
 %    Read in a previously acquired movie that we have stored, and put it
 %    into a form to play back.

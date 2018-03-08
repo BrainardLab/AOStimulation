@@ -1,23 +1,20 @@
 function [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
-% Load the time series of emulation data onto the card and get it ready to go.
+% Calculate the DA card memery size for sampling points.
 %
 % Syntax:
-%    memSize = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
+%    [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency)
 %
 % Description:
-%    We work by first loading the data onto the D/A card's onboard memory
-%    and then later giving it a go signal to ship it out.  This routine
-%    does the loading.
+%    According to the emulator parameters, the function calcuates the pixel
+%    time, and then gets the sampling points.
 %
 % Inputs:
-%    emulatorParams     - Structure containing the emulation parameters.
-%                         See aoemBasicEmulator for example of what is in
-%                         this.
+%    emulatorParams    - emulator parameters
 %    sampling_clk_frequency - How fast are we running the board.
 % 
 % Outputs:
-%    memSize      - Sampling memery size
-%    sampleParas  - Sampling points for Hsync / Vsync
+%    memSize      - sampling memery size
+%    sampleParas  - sampling points for Hsync / Vsync
 %
 % Optional key/value pairs:
 %    None.
@@ -28,8 +25,6 @@ function [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_freq
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 
-% 1, generate data
-% 2, put data into card
 
 % Clock times in ns
 sampling_clk_time = 10^9/sampling_clk_frequency;
@@ -70,6 +65,5 @@ sampleParas.vt_active_points = fix(vt_active_ns / sampling_clk_time);
 sampleParas.vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
 sampleParas.vt_len_points = sampleParas.vt_sync_points + sampleParas.vt_back_porch_points + sampleParas.vt_active_points + sampleParas.vt_front_porch_points;
 
-% Total memory size
 memSize = sampleParas.hr_line_points*emulatorParams.vt_pixels;
         

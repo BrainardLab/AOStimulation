@@ -2,7 +2,7 @@ function [status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorPara
 % Load the time series of emulation data onto the card and get it ready to go.
 %
 % Syntax:
-%    status = aoemLoadEmulationDataOntoCard(  )
+%    status,cardInfo = aoemLoadEmulationDataOntoCard(  )
 %
 % Description:
 %    We work by first loading the data onto the D/A card's onboard memory
