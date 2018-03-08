@@ -32,7 +32,7 @@ dac_maxFS = 8191;
 dac_minFS = -8192;
 nOutputChannels = 4;
 
-timeout_ms = 30*1000;  %%120000
+timeout_ms = 5*1000;  %%120000
 % Emulation parameters
 %
 % Master clock frequency being emulated, and corrsponding clock time 
