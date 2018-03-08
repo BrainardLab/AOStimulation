@@ -27,12 +27,19 @@ clear;
 %% Define parameters
 
 % DA card sampling rate and clock time.  Clock time is in ns.
-sampling_clk_frequency = 38.4910 * 10^6;   %38.4910
+%
+% Usually we would make this match the pixel clock frequency that
+% we are emulating, just to keep the timing simple and lined up.
+sampling_clk_frequency = 38.4910 * 10^6; 
+
+% DA card output parameters
 dac_maxFS = 8191;
 dac_minFS = -8192;
 nOutputChannels = 4;
 
-timeout_ms = 5*1000;  %%120000
+% Card timeout parameter
+timeout_ms = 10000;
+
 % Emulation parameters
 %
 % Master clock frequency being emulated, and corrsponding clock time 
@@ -55,7 +62,7 @@ emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_
 emulatorParams.outputMillivolts = [2000 3000 100 3000]; % [ch0 ch1 ch2 ch3]
 emulatorParams.outputOffsetvolts = [0 0 0 0];  %offset adjust
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
 [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency);
 
 [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,timeout_ms);

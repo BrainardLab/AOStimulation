@@ -10,15 +10,14 @@ function [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_freq
 %    does the loading.
 %
 % Inputs:
-%    nOutputChannels    - Number of AOSLO outputs being emulated.
-%                         Typically three if there is one imaging channel,
-%                         since we will have h sync, v sync, and pixels.
-%                         But could be more in the future.
+%    emulatorParams     - Structure containing the emulation parameters.
+%                         See aoemBasicEmulator for example of what is in
+%                         this.
 %    sampling_clk_frequency - How fast are we running the board.
 % 
 % Outputs:
-%    memSize      - sampling memery size
-%    sampleParas  - sampling points for Hsync / Vsync
+%    memSize      - Sampling memery size
+%    sampleParas  - Sampling points for Hsync / Vsync
 %
 % Optional key/value pairs:
 %    None.
@@ -71,5 +70,6 @@ sampleParas.vt_active_points = fix(vt_active_ns / sampling_clk_time);
 sampleParas.vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
 sampleParas.vt_len_points = sampleParas.vt_sync_points + sampleParas.vt_back_porch_points + sampleParas.vt_active_points + sampleParas.vt_front_porch_points;
 
+% Total memory size
 memSize = sampleParas.hr_line_points*emulatorParams.vt_pixels;
         
