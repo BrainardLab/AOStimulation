@@ -1,32 +1,37 @@
-function [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,timeout_ms)
+function [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,emulationDuration_ms)
 % Initialize the D/A card to be ready to go for our emulator
 %
 % Syntax:
-%    [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(    )
+%    [status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,emulationDuration_ms)
 %
 % Description:
 %    Handle all the little things we need to do to get the card ready to
 %    emulate the AOSLO. 
+%
+%    Based on code provided by the card manufacturer.
 %
 % Inputs:
 %    nOutputChannels    - Number of AOSLO outputs being emulated.
 %                         Typically three if there is one imaging channel,
 %                         since we will have h sync, v sync, and pixels.
 %                         But could be more in the future.
-%    emulatorParams    - emulator parameters
-%    sampling_clk_frequency    -    How fast are we running the board.
-%    memSize     -    memsize for sampling one frame data
-%    timeout_ms    -    when timeout card stop
+%    emulatorParams     - Emulator parameters
+%    sampling_clk_frequency - How fast are we running the board.
+%    memSize            - Memory size for sampling one frame data
+%    emulationDuration_ms - Duration of emulation run
+%
 % Outputs:
-%    status      - Boolean.  True means success, false means failure of
-%                  some sort.
-%    cardInfo    - DA card information  
-%    mRegs - label names for registers
+%    status             - Boolean.  True means success, false means failure of
+%                         some sort.
+%    cardInfo           - Structure with DA card information  
+%    mRegs              - Structure with label names for registers
+%
 % Optional key/value pairs:
 %    None.
 %
 % See also:
 %
+
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 
@@ -117,7 +122,7 @@ switch replayMode
 
             return;
         end
-        fprintf (' ............. Set software trigger\n Wait for timeout (%d sec) .....', timeout_ms / 1000);
+        fprintf (' ............. Set software trigger\n Wait for timeout (%d sec) .....', emulationDuration_ms / 1000);
 
     case 3
         % ----- single restart (one signal on every trigger edge) -----
@@ -134,7 +139,7 @@ switch replayMode
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupTrigSoftware:\n\t', true);
             return;
         end
-        fprintf (' ............... Set extern trigger\n Wait for timeout (%d sec) .....', timeout_ms / 1000);
+        fprintf (' ............... Set extern trigger\n Wait for timeout (%d sec) .....', emulationDuration_ms / 1000);
 end
 
 % ----- type dependent card setup -----

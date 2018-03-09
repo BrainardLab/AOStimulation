@@ -1,8 +1,8 @@
-function cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms)
+function cardInfo = aoemStartEmulate(cardInfo,mRegs,emulationDuration_ms)
 % Start the card after it is ready to go.
 %
 % Syntax:
-%    cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms)
+%    cardInfo = aoemStartEmulate(cardInfo,mRegs,emulationDuration_ms)
 %
 % Description:
 %    start the card
@@ -10,7 +10,7 @@ function cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms)
 % Inputs:
 %    cardInfo    -    DA card information
 %    mRegs - label names for registers
-%    timeout_ms - stop time
+%    emulationDuration_ms - stop time
 % Outputs:
 %    cardInfo    -    DA card information
 %
@@ -19,7 +19,7 @@ function cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms)
 %
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
-errorCode = spcm_dwSetParam_i32 (cardInfo.hDrv, mRegs('SPC_TIMEOUT'), timeout_ms);
+errorCode = spcm_dwSetParam_i32 (cardInfo.hDrv, mRegs('SPC_TIMEOUT'), emulationDuration_ms);
 if (errorCode ~= 0)
     [success, cardInfo] = spcMCheckSetError (errorCode, cardInfo);
     spcMErrorMessageStdOut (cardInfo, 'Error: spcm_dwSetParam_i32:\n\t', true);

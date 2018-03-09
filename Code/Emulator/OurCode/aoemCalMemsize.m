@@ -6,7 +6,8 @@ function [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_freq
 %
 % Description:
 %    According to the emulator parameters, the function calcuates the pixel
-%    time, and then gets the sampling points.
+%    time, and then gets the sampling points.  This results in a total
+%    memory size that we need to allocate to hold all the samples.
 %
 % Inputs:
 %    emulatorParams    - emulator parameters
@@ -19,7 +20,8 @@ function [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_freq
 % Optional key/value pairs:
 %    None.
 %
-% See also:
+% See also: aoemBasicEmulator, aoeimInitializeCardForEmulation,
+%    aoemGenerateSignal, aoemLoadEmulationDataOntoCard.
 %
 
 % History:
@@ -65,5 +67,9 @@ sampleParas.vt_active_points = fix(vt_active_ns / sampling_clk_time);
 sampleParas.vt_front_porch_points = fix(vt_front_porch_ns / sampling_clk_time);
 sampleParas.vt_len_points = sampleParas.vt_sync_points + sampleParas.vt_back_porch_points + sampleParas.vt_active_points + sampleParas.vt_front_porch_points;
 
+% Get memory size from number of lines and pixels
+%
+% Note that we only store one line per vertical pixel, so we
+% use emulatorParams.vt_pixels here. 
 memSize = sampleParas.hr_line_points*emulatorParams.vt_pixels;
         

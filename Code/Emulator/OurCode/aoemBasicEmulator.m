@@ -11,8 +11,9 @@
 %    the AOSLO acquisition system and get back a movie very close to what
 %    we started with.
 %
-%    Note that this program is a work in progress - it does not yet do the
-%    above.
+%    This is a very basic emulator that just takes one frame and sends it
+%    out over and over again.  Once we have this working we will move on to
+%    playback an entire movie.
 %
 
 % History
@@ -37,8 +38,8 @@ dac_maxFS = 8191;
 dac_minFS = -8192;
 nOutputChannels = 4;
 
-% Card timeout parameter
-timeout_ms = 10000;
+% How long to emulate for
+emulationDuration_ms = 10000;
 
 % Emulation parameters
 %
@@ -52,6 +53,8 @@ emulatorParams.hr_active_pixels = 721;
 emulatorParams.hr_front_porch_pixels = 1395;
 emulatorParams.hr_pixels = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+emulatorParams.hr_active_pixels+emulatorParams.hr_front_porch_pixels;
 
+% From the measurement at AOSLO, this is a 5ms pulse width for vertical
+% sync pulse.
 emulatorParams.vt_sync_pixels = 10;
 emulatorParams.vt_back_porch_pixels = 136;
 emulatorParams.vt_active_pixels = 645;
@@ -59,19 +62,43 @@ emulatorParams.vt_front_porch_pixels = 133;
 emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels+emulatorParams.vt_front_porch_pixels;
 
 % Output maximum voltage
-emulatorParams.outputMillivolts = [2000 3000 100 3000]; % [ch0 ch1 ch2 ch3]
-emulatorParams.outputOffsetvolts = [0 0 0 0];  %offset adjust
+%
+% Each vector corresponds to channels 0, 1, 2, and 3 on the board, in
+% order.
+emulatorParams.outputMillivolts = [2000 3000 100 3000];
+emulatorParams.outputOffsetvolts = [0 0 0 0];
 
-%% 
+% Source for movie that we will emulate
+movieFileName = 'D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\TestH.avi';
+
+%% Figure out sampling params and amount of memory needed for emulation.
 [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency);
 
-[status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,timeout_ms);
+%% Initialize the card
+[status,cardInfo,mRegs] = aoemInitializeCardForEmulation(nOutputChannels,emulatorParams,sampling_clk_frequency,memSize,emulationDuration_ms);
+if (~status)
+    error('Card initialization returns failure status');
+end
 
-[status,cardInfo] = aoemLoadEmulationDataOntoCard(cardInfo,emulatorParams,sampleParas,memSize);
+%% Get the movie data to emulate
+[movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorParams,sampleParas,memSize);
 
-% ----- we'll start and wait until the card has finished or until a timeout occurs -----
-cardInfo = aoemStartEmulate(cardInfo,mRegs,timeout_ms);
+%% Load in the emulator data
+% 
+% The cardInfo structure is modified so that it now contains all of the
+% information needed to run the emulation.  It can do so, because the
+% actual movie data has been loaded onto the card.
+[status,cardInfo] = aoemLoadEmulationDataOntoCard(movieData,hrData,vtData,cardInfo,emulatorParams,sampleParas,memSize);
+if (~status)
+    error('Data load onto card returns failure status');
+end
 
-% ***** close card *****
-aoemCloseCard(cardInfo);
+%% Start and emulate for specified duration.
+cardInfo = aoemStartEmulate(cardInfo,mRegs,emulationDuration_ms);
+
+%% Close up card
+status = aoemCloseCard(cardInfo);
+if (~status)
+    error('Card close returns failure status');
+end
   

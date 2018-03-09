@@ -1,24 +1,30 @@
-function movie = aoemReadMoveForPlayback(movieFileName,emulatorParams,sampleParas)
+function movie = aoemReadMovieForPlayback(movieFileName,emulatorParams,sampleParas)
 % Read in a movie acquired on the real AOSLO for us to play back
 %
 % Syntax:
-%    movie = aoemReadMoveForPlayback()
+%    movie = aoemReadMovieForPlayback(movieFileName,emulatorParams,sampleParas)
+%
 % Description:
 %    Read in a previously acquired movie that we have stored, and put it
 %    into a form to play back.
 %
-% Get the input movie. Right now we just use one frame for test
+%    Right now we just use one frame for testing, so this is actually an image
+%    not a movie.  It should be in a format that imread can handle.
+%
 % Inputs:
-%    movieFileName    - the name of the movie  
-%    emulatorParams    - emulator parameters
+%    movieFileNane      - Full path to movie that we'll emulate.
+%    emulatorParams     - Emulator parameters
+%    sampleParas        - Sampling points.
 % 
 % Outputs:
-%    movie      - one x N array  
+%    movie              - One frame of a "movie", converted into a time series
+%                         row vector.
+%
 % Optional key/value pairs:
 %    None.
 %
 % See also:
-%
+
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 

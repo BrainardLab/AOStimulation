@@ -155,7 +155,7 @@ if (replayMode < 1) | (replayMode > 3)
 end
 
 %% Do card settings
-timeout_ms = 10000;
+emulationDuration_ms = 10000;
 samplerate = sampling_clk_frequency;
 
 % Set the samplerate and internal PLL, no clock output 
@@ -211,7 +211,7 @@ switch replayMode
 
             return;
         end
-        fprintf (' ............. Set software trigger\n Wait for timeout (%d sec) .....', timeout_ms / 1000);
+        fprintf (' ............. Set software trigger\n Wait for timeout (%d sec) .....', emulationDuration_ms / 1000);
 
     case 3
         % ----- single restart (one signal on every trigger edge) -----
@@ -228,7 +228,7 @@ switch replayMode
             spcMErrorMessageStdOut (cardInfo, 'Error: spcMSetupTrigSoftware:\n\t', true);
             return;
         end
-        fprintf (' ............... Set extern trigger\n Wait for timeout (%d sec) .....', timeout_ms / 1000);
+        fprintf (' ............... Set extern trigger\n Wait for timeout (%d sec) .....', emulationDuration_ms / 1000);
 end
 
 % ----- type dependent card setup -----
@@ -325,7 +325,7 @@ if (errorCode ~= 0)
 end
 
 % ----- we'll start and wait until the card has finished or until a timeout occurs -----
-errorCode = spcm_dwSetParam_i32 (cardInfo.hDrv, mRegs('SPC_TIMEOUT'), timeout_ms);
+errorCode = spcm_dwSetParam_i32 (cardInfo.hDrv, mRegs('SPC_TIMEOUT'), emulationDuration_ms);
 if (errorCode ~= 0)
     [success, cardInfo] = spcMCheckSetError (errorCode, cardInfo);
     spcMErrorMessageStdOut (cardInfo, 'Error: spcm_dwSetParam_i32:\n\t', true);

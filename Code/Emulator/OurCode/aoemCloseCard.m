@@ -1,20 +1,24 @@
 function status = aoemCloseCard(cardInfo)
-% close card.
+% Close the DAC card.
 %
 % Syntax:
 %    status = aoemCloseCard(cardInfo)
 %
 % Description:
-%    close the card
+%    Close the DAC card.
 %
 % Inputs:
+%    cardInfo           - Struct with DAC card information
 %    
 % Outputs:
-%    
+%    status             - Boolean. True means success, false means failure of
+%                         some sort.   
 %
 % Optional key/value pairs:
 %    None.
-%
+
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
-spcMCloseCard (cardInfo);
+
+% Call into API to do this.
+spcMCloseCard(cardInfo);
