@@ -1,8 +1,8 @@
-function [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorParams,sampleParas,memSize)
+function [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorParams,sampleParas,memSize,dac_maxFS,dac_minFS)
 % Create the data seqence for movie, horizontal, vertical.
 %
 % Syntax:
-%    [movieData,hrData,vtData] = aoemGenerateSignal(emulatorParams,sampleParas,memSize)
+%    [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorParams,sampleParas,memSize,dac_maxFS,dac_minFS)
 %
 % Description:
 %    we create signal to emulate the real signals from oscilloscope and
@@ -13,7 +13,9 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorPa
 %    emulatorParams     - Emulator parameters
 %    sampleParas        - Sampling points for Hsync / Vsync
 %    memSize            - Memory for sampling one frame data
-% 
+%    dac_maxFS          - max full-scale for DA card
+%    dac_minFS          - min full-scale for DA card
+%
 % Outputs:
 %    movieData          - Movie data
 %    hrData             - Horizontal sync signal
@@ -33,15 +35,14 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorPa
 % shape: 1 : rectangel
 %        2 : invert rectangel
 %        3 : triangel
-%        4 : sawtooth
 
 % ----- ch0 = horizontal sync
 nPulseWidth = fix(memSize / emulatorParams.vt_pixels / 2);
-hrData = aoemSpcMCalcSignal(memSize, 2, emulatorParams.vt_pixels, 100,nPulseWidth);
+hrData = aoemSpcMCalcSignal(memSize, 2, emulatorParams.vt_pixels, 100,nPulseWidth,dac_maxFS,dac_minFS);
 
 % ----- ch1 = vertical sync
 nPulseWidth = (sampleParas.vt_sync_points+sampleParas.vt_back_porch_points) / 2;
-vtData = aoemSpcMCalcSignal(memSize, 1, 1, 100,nPulseWidth);
+vtData = aoemSpcMCalcSignal(memSize, 1, 1, 100,nPulseWidth,dac_maxFS,dac_minFS);
 
 % ----- ch2 = movie waveform -----
 movieData = aoemReadMovieForPlayback(movieFileName,emulatorParams,sampleParas);

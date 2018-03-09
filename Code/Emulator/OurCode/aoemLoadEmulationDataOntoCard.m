@@ -1,4 +1,4 @@
-function [status,cardInfo] = aoemLoadEmulationDataOntoCard(movieData,hrData,vtData,cardInfo,cardInfo,emulatorParams,sampleParas,memSize)
+function [status,cardInfo] = aoemLoadEmulationDataOntoCard(movieData,hrData,vtData,cardInfo,emulatorParams,sampleParas,memSize)
 % Load the time series of emulation data onto the card and get it ready to go.
 %
 % Syntax:
@@ -66,6 +66,6 @@ if (errorCode ~= 0)
     spcMErrorMessageStdOut (cardInfo, 'Error: spcm_dwSetData:\n\t', true);
     return;
 else
-    status = 0;
+    status = 1;
 end
 end

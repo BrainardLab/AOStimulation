@@ -45,9 +45,9 @@ function movie = aoemReadMovieForPlayback(movieFileName,emulatorParams,samplePar
 
 %%++++++++++++++++++++++++++++++++++++++
 % pattern test 
-H = 645;
-W = 721;
-P = imread('image1.jpg');%%checkboard1
+H = emulatorParams.height;
+W = emulatorParams.width;
+P = imread(movieFileName);%%checkboard1
 P = rgb2gray(P);
 P = P(1:H,1:W);
 imshow(P)

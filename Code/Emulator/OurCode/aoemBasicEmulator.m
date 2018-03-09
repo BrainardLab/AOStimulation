@@ -33,9 +33,9 @@ clear;
 % we are emulating, just to keep the timing simple and lined up.
 sampling_clk_frequency = 38.4910 * 10^6; 
 
-% DA card output parameters
+% DA card output parameters. 14bit DA, double precision(8192~-8192)
 dac_maxFS = 8191;
-dac_minFS = -8192;
+dac_minFS = 0;
 nOutputChannels = 4;
 
 % How long to emulate for
@@ -68,8 +68,12 @@ emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_
 emulatorParams.outputMillivolts = [2000 3000 100 3000];
 emulatorParams.outputOffsetvolts = [0 0 0 0];
 
+%emulator image resolution
+emulatorParams.height = 645;
+emulatorParams.width = 721;
 % Source for movie that we will emulate
-movieFileName = 'D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\TestH.avi';
+% test images include image1 and movies
+movieFileName = 'D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\image1.jpg';
 
 %% Figure out sampling params and amount of memory needed for emulation.
 [memSize,sampleParas] = aoemCalMemsize(emulatorParams,sampling_clk_frequency);
@@ -81,7 +85,7 @@ if (~status)
 end
 
 %% Get the movie data to emulate
-[movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorParams,sampleParas,memSize);
+[movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorParams,sampleParas,memSize,dac_maxFS,dac_minFS);
 
 %% Load in the emulator data
 % 
@@ -94,8 +98,10 @@ if (~status)
 end
 
 %% Start and emulate for specified duration.
-cardInfo = aoemStartEmulate(cardInfo,mRegs,emulationDuration_ms);
-
+[status,cardInfo] = aoemStartEmulate(cardInfo,mRegs,emulationDuration_ms);
+if (~status)
+    error('start card returns failure status');
+end
 %% Close up card
 status = aoemCloseCard(cardInfo);
 if (~status)

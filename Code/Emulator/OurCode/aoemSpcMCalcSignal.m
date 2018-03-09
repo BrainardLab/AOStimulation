@@ -1,19 +1,27 @@
-function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
-% Read in a movie acquired on the real AOSLO for us to play back
+function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync,dac_maxFS,dac_minFS)
+% generate different shapes signals: rectangel, triangel, sawtooth.
 %
 % Syntax:
 %    signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
 % Description:
-%    Read in a previously acquired movie that we have stored, and put it
-%    into a form to play back.
+%    we create the signals for Hsync and Vsync 
 %
-% Get the input movie. Right now we just use one frame for test
 % Inputs:
-%    movieFileName    - the name of the movie  
-%    emulatorParams    - emulator parameters
-% 
+%    len                - signal total length.
+%    shape              - signal shape
+%                         1 : rectangel
+%                         2 : invert rectangel
+%                         3 : triangel
+%                         
+%    loops              - signal cycle under the length
+%    gainP              - adjust the signal gain for special application
+%    noSync             - synchronous pulse width
+%    dac_maxFS          - max full-scale for DA card
+%    dac_minFS          - min full-scale for DA card
+%
 % Outputs:
-%    movie      - one x N array  
+%    signal             - generated signal
+%    
 % Optional key/value pairs:
 %    None.
 %
@@ -22,51 +30,29 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
 %**************************************************************************
-% Spectrum Matlab Library Package               (c) Spectrum GmbH , 11/2006
-%**************************************************************************
-% Supplies different common functions for Matlab programs accessing the 
-% SpcM driver interface. Feel free to use this source for own projects and
-% modify it in any kind
-%**************************************************************************
-% spcMCalcSignal:
-% Calculates waveform data 
-% shape: 1 : rectangel
-%        2 : invert rectangel
-%        3 : triangel
-%        4 : sawtooth
-%**************************************************************************
 
 % NEED TO PASS WIDTH OF PULSE FOR CASE 2
 
 
     
-    signal = zeros (1, len);
-
+     signal = zeros (1, len);
+% ----- calculate resolution -----
     
-  
-    
-    % ----- calculate resolution -----
-    
-    maxFS = 8191;
-    minFS = -8192;
-    scale = 8191 * gainP / 100;
-   
-    
+     scale = dac_maxFS * gainP / 100;
      % ----- calculate waveform -----
      block = len / loops;
      blockHalf = block / 2;
      sineXScale = 2 * pi / len * loops;
-     %span = maxFS - minFS;
-     span = maxFS - 0;
-     outputVolt=3;
+     span = dac_maxFS - 0;
      
-     baseVoltForSawtooth=2;
-     baseVolt=outputVolt-baseVoltForSawtooth;
+% keep for sawtooth signal    
+%      outputVolt=3;
+%      baseVoltForSawtooth=2;
+%      baseVolt=outputVolt-baseVoltForSawtooth;
+%      
+%      span1 = span*baseVoltForSawtooth/outputVolt;
+%      span2=span*baseVolt/outputVolt;
      
-     span1 = span*baseVoltForSawtooth/outputVolt;
-     span2=span*baseVolt/outputVolt;
-     
-     minFS = 0 ; 
      %%%%%%%%%%%%%%%%%
      for i=1 : len
     
@@ -77,36 +63,35 @@ function signal = aoemSpcMCalcSignal (len, shape, loops, gainP,noSync)
             % ----- rectangle -----
             case 1
                 if posInBlock < noSync%blockHalf %%/1000/2
-                    signal (1, i) = 0; %minFS;
+                    signal (1, i) = 0; %dac_minFS;
                 else
-                    signal (1, i) = maxFS;
+                    signal (1, i) = dac_maxFS;
                 end
     
             % ----- rectangle -----
             case 2
                 if posInBlock < noSync%blockHalf %%/1000/2
-                    signal (1, i) = maxFS;
+                    signal (1, i) = dac_maxFS;
                 else
-                    signal (1, i) = 0; %minFS;
+                    signal (1, i) = 0; %dac_minFS;
                 end
             
            % ----- triangel -----
            case 3
                if posInBlock < blockHalf
-                   signal (1, i) = minFS + posInBlock * span / blockHalf;
+                   signal (1, i) = dac_minFS + posInBlock * span / blockHalf;
               else
-                   signal (1, i) = maxFS - (posInBlock - blockHalf) * span / blockHalf;
+                   signal (1, i) = dac_maxFS - (posInBlock - blockHalf) * span / blockHalf;
               end     
          
           % ----- sawtooth -----
-          case 4      
-            if posInBlock < noSync
-                signal (1, i) = fix(minFS + span2 + posInBlock * span1/noSync);
-            else
-                signal (1, i) = fix(minFS + span2 + span1 - (posInBlock-noSync+1) * span1/(len-noSync));
-            end
-            %signal (1, i) = minFS + posInBlock * span / block;
-        end    
+%           case 4      
+%             if posInBlock < noSync
+%                 signal (1, i) = fix(dac_minFS + span2 + posInBlock * span1/noSync);
+%             else
+%                 signal (1, i) = fix(dac_minFS + span2 + span1 - (posInBlock-noSync+1) * span1/(len-noSync));
+%             end
+          end    
     end
     
    

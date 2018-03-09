@@ -22,3 +22,4 @@ function status = aoemCloseCard(cardInfo)
 
 % Call into API to do this.
 spcMCloseCard(cardInfo);
+status = 1;
