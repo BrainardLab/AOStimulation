@@ -10,17 +10,22 @@ function [status,cardInfo] = aoemStartEmulate(cardInfo,mRegs,emulationDuration_m
 % Inputs:
 %    cardInfo             - Structure with DA card information  
 %    mRegs                - Structure with label names for registers
-%    emulationDuration_ms - stop time
+%    emulationDuration_ms - Stop time
+%
 % Outputs:
-%    status             - Boolean.  True means success, false means failure of
-%                         some sort.
-%    cardInfo             - updated Structure with DA card information  
+%    status               - Boolean.  True means success, false means failure of
+%                           some sort.
+%    cardInfo             - uUpdated Structure with DA card information  
 %
 % Optional key/value pairs:
 %    None.
 %
+% See also:
+%
+
 % History:
 %   02/02/18  tyh, dhb   Wrote header comments.
+
 errorCode = spcm_dwSetParam_i32 (cardInfo.hDrv, mRegs('SPC_TIMEOUT'), emulationDuration_ms);
 if (errorCode ~= 0)
     [status, cardInfo] = spcMCheckSetError (errorCode, cardInfo);

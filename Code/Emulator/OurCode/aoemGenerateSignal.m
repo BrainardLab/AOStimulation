@@ -6,7 +6,7 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorPa
 %
 % Description:
 %    we create signal to emulate the real signals from oscilloscope and
-%    timing parateres.
+%    timing parameters.
 %
 % Inputs:
 %    movieFileNane      - Full path to movie that we'll emulate.
@@ -32,9 +32,9 @@ function [movieData,hrData,vtData] = aoemGenerateSignal(movieFileName,emulatorPa
 
 % Note below that the second argument to aoemScMCalcSignal specifies
 % the shape of the waveform.
-% shape: 1 : rectangel
-%        2 : invert rectangel
-%        3 : triangel
+% shape: 1 : rectangle
+%        2 : invert rectangle
+%        3 : triangle
 
 % ----- ch0 = horizontal sync
 nPulseWidth = fix(memSize / emulatorParams.vt_pixels / 2);

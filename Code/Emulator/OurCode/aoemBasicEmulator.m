@@ -33,7 +33,8 @@ clear;
 % we are emulating, just to keep the timing simple and lined up.
 sampling_clk_frequency = 38.4910 * 10^6; 
 
-% DA card output parameters. 14bit DA, double precision(8192~-8192)
+% DA card output parameters. 14-bit DAC, double precision(possible range
+% is -8192 to 8191)
 dac_maxFS = 8191;
 dac_minFS = 0;
 nOutputChannels = 4;
@@ -68,9 +69,10 @@ emulatorParams.vt_pixels = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_
 emulatorParams.outputMillivolts = [2000 3000 100 3000];
 emulatorParams.outputOffsetvolts = [0 0 0 0];
 
-%emulator image resolution
+% Emulator image resolution
 emulatorParams.height = 645;
 emulatorParams.width = 721;
+
 % Source for movie that we will emulate
 % test images include image1 and movies
 movieFileName = 'D:\tyh\david\DAcard\CD_SPCM_Copy\Examples\matlab\examples\image1.jpg';
@@ -102,6 +104,7 @@ end
 if (~status)
     error('start card returns failure status');
 end
+
 %% Close up card
 status = aoemCloseCard(cardInfo);
 if (~status)
