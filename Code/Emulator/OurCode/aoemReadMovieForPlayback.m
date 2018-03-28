@@ -80,53 +80,42 @@ end
 % each following block of code.
 %%%%%%%%%%%%%%%%%%
 
-%our scan array is emulatorParams.vt_pixels * emulatorParams.hr_pixels, active image is in the
-%middle (emulatorParams.vt_active_pixels * emulatorParams.hr_active_pixels)
-% active_col_start = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+1;
-% active_col_end = emulatorParams.hr_sync_pixels+emulatorParams.hr_back_porch_pixels+emulatorParams.hr_active_pixels;
-% active_row_start = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+1;
-% active_row_end = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels;
+% calculate when the active column/row start and end.
 active_col_start = sampleParas.hr_sync_points+sampleParas.hr_back_porch_points+1;
 active_col_end = sampleParas.hr_sync_points+sampleParas.hr_back_porch_points+sampleParas.hr_active_points;
 active_row_start = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+1;
 active_row_end = emulatorParams.vt_sync_pixels+emulatorParams.vt_back_porch_pixels+emulatorParams.vt_active_pixels;
 
-
+%initialize the sampling points for one frame 
 movie_frame_array = zeros(emulatorParams.vt_pixels,sampleParas.hr_line_points);
+
+%temp variable to index frame pixels
 temp_x=1;
 temp_y=1;
+%adjust offset points according to test result. It maybe not necessary
+%later
 %col_offset1 = 420;  %first edge
-col_offset1 = 0; %610; %first edge,610 is good.
-col_offset = 1615; %second edge
-half_line =fix((active_col_end - active_col_start)/2) ;
+%col_offset1 = 0; %610; %first edge,610 is good.
+%col_offset = 1615; %second edge
+%decide when input image start output. typically need no offset. But if
+%the timing parameters are not accurate, offset value need to be set.
 for i = active_row_start : active_row_end
     
+    %keep the offset mode for possible test.
     %for j = active_col_start+420 : (active_col_start+420+360-1)
     %for j = active_col_start+col_offset : (active_col_start+col_offset+360-1) %%???????
     %for j = active_col_start+col_offset1 : (active_col_start+col_offset1+half_line-1)
     for j = active_col_start : active_col_end
-        %temp_y1=min(1+2*(temp_y-1),W);  %2 downsampling
-        %temp_x1 = min(1+2*(temp_x-1),H); %2 downsampling
         temp_y1 = min(temp_y,W);
         temp_x1 = min(temp_x,H);
-        movie_frame_array(i,j) = 200; % P(temp_x1,temp_y1);
+        movie_frame_array(i,j) = P(temp_x1,temp_y1);
         temp_y = temp_y+1;
     end
     temp_y = 1;
-    
-    %         for j = active_col_start+1610 : (active_col_start+1610+440-1)
-    %             temp_y1=min(1+2*(temp_y-1),W);
-    %             temp_x1 = min(1+2*(temp_x-1),H);
-    %             movie_frame_array(i,j) = P(temp_x1,temp_y1);
-    %             temp_y = temp_y+1;
-    %         end
-    %            temp_y = 1;
-    
     temp_x = temp_x +1;
     
 end
-
-%movie_frame_array = 200 * ones(emulatorParams.vt_pixels,sampleParas.hr_line_points);
-
+% reshape the array to one vector to meet the D/A card API requirement.
 movie_frame_seq = reshape(movie_frame_array',1,emulatorParams.vt_pixels * sampleParas.hr_line_points);
+% transit 8bit data to 14bit data
 movie = movie_frame_seq*2^5;
