@@ -14,6 +14,9 @@
 %% Clear out workspace
 clear; close all;
 
+%% Choices
+similarityMethod = 'NCC';
+
 %% System parameters
 %
 % stripSize - vertical size of registration strip in rows
@@ -64,14 +67,26 @@ desinMovies = desinMovies(1);
 
 % Method 2: Incremental line by line registration.
 %way 2: overlapping aoRegStripOverlapping
-[regImage,status]=aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara);
+[stripInfo,regImage,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
+    'SimilarityMethod',similarityMethod);
 
 % Method 3: block registration
 %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
 
 
 %% Analyze results
-%output result
+figure; imshow(refImage);
+figure; imshow(regImage);
+
+frameToAnalyze = 1;
+dxValues = [stripInfo(frameToAnalyze,:).dx];
+dyValues = [stripInfo(frameToAnalyze,:).dy];
+figure; hold on
+plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
+plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','g');
+ylim([-sysPara.ROIx sysPara.ROIx]);
+ylabel('Displacement (pixels)')
+xlabel('Strip number');
 
 
 

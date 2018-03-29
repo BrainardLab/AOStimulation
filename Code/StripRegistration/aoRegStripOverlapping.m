@@ -26,7 +26,6 @@ function [regImage,status]=aoRegStripOverlapping(refImage,desinMovies,sysPara,im
 % History:
 %   03/14/18  tyh
 
-
 %for image_iter = 1 : 1 %imagePara.nFrames
 % get the current image for registration
 image_iter = 4;
