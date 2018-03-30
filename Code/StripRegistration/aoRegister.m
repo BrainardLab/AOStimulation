@@ -16,6 +16,12 @@ clear; close all;
 
 %% Choices
 similarityMethod = 'NCC';
+whichFrame = 4;
+if (whichFrame == 0)
+    whichFrameToAnalyze = 2;
+else
+    whichFrameToAnalyze = whichFrame;
+end
 
 %% System parameters
 %
@@ -27,8 +33,8 @@ sysPara.blockSize = 8;
 
 % Define where we think the block might be. This limits the
 % amount of searching that we have to do.
-sysPara.ROIx = 16;
-sysPara.ROIy = 16;
+sysPara.ROIx = 100;
+sysPara.ROIy = sysPara.ROIx;
 
 %% Desinusoider parameters. Not yet used.
 desinArray = [];
@@ -51,7 +57,6 @@ end
 %% Step 1
 % Read the movie and ref image
 [refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile);
-desinMovies = desinMovies(1);
 
 %% Step 2
 % Desinusoiding. Not yet implemented
@@ -68,7 +73,7 @@ desinMovies = desinMovies(1);
 % Method 2: Incremental line by line registration.
 %way 2: overlapping aoRegStripOverlapping
 [stripInfo,regImage,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
-    'SimilarityMethod',similarityMethod);
+    'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame);
 
 % Method 3: block registration
 %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
@@ -78,9 +83,8 @@ desinMovies = desinMovies(1);
 figure; imshow(refImage);
 figure; imshow(regImage);
 
-frameToAnalyze = 1;
-dxValues = [stripInfo(frameToAnalyze,:).dx];
-dyValues = [stripInfo(frameToAnalyze,:).dy];
+dxValues = [stripInfo(whichFrameToAnalyze,:).dx];
+dyValues = [stripInfo(whichFrameToAnalyze,:).dy];
 figure; hold on
 plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
 plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','g');
@@ -88,5 +92,12 @@ ylim([-sysPara.ROIx sysPara.ROIx]);
 ylabel('Displacement (pixels)')
 xlabel('Strip number');
 
+% Report largest strip-by-strip shifts
+maxLineDx = max(abs(diff(dxValues)));
+maxLineDy = max(abs(diff(dyValues)));
+fprintf('Maximum dx difference: %d, maximum dy  difference: %d\n',maxLineDx,maxLineDy);
+
+% Show the single frame we are analyzing
+figure; imshow(desinMovies(whichFrameToAnalyze).cdata);
 
 

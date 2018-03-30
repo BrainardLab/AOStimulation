@@ -1,4 +1,4 @@
-function [stripInfo,registeredImage,status]=aoRegStripOverlappingOneLine(refImage,desinusoidedMovie,sysPara,imagePara,varargin)
+function [stripInfo,registeredImage,paddedReferenceImage,status]=aoRegStripOverlappingOneLine(refImage,desinusoidedMovie,sysPara,imagePara,varargin)
 % Do registration with overlapping strips
 %
 % Syntax:
@@ -21,6 +21,7 @@ function [stripInfo,registeredImage,status]=aoRegStripOverlappingOneLine(refImag
 %    stripInfo          - Registration information for each strip in each
 %                         frame in the input desinMovies
 %    registeredImage    - Registered image, based on estimate motion
+%    paddedReferenceImage - The reference image as padded for registration.
 %    status             - Status tells if things are ok.  1 means OK, 0
 %                         means error.
 %
@@ -28,6 +29,13 @@ function [stripInfo,registeredImage,status]=aoRegStripOverlappingOneLine(refImag
 %    'SimilarityMethod' - String, specify similarity method (default
 %                         'NCC'). This is passed to the underlying routine
 %                         asRegMatch that computes similarity.
+%    'WhichFrame'       - Value.  If 0, the whole movie is analyzed.  If it
+%                         is an integer greater than 1, we just analyze
+%                         that frame (default 1).
+%    'PadValue'         - The value to use to pad the reference image
+%                         (default 0).
+%    'LineIncrement'    - How far along we increment the strip in the
+%                         vertical direction (default 1).
 %    'verbose'          - Boolean, print out stuff (default true);
 %
 % See also: aoRegMatch.
@@ -39,14 +47,19 @@ function [stripInfo,registeredImage,status]=aoRegStripOverlappingOneLine(refImag
 % Parse
 p = inputParser;
 p.addParameter('SimilarityMethod','NCC',@ischar);
+p.addParameter('WhichFrame',1,@isnumeric);
+p.addParameter('PadValue',0,@isnumeric);
 p.addParameter('verbose',true,@islogical);
 p.parse(varargin{:});
 
 % Loop over movie frames
-% This will become a loop over frames at
-% some point.
-theFrameToExamine = 1;
-for frameIdx = theFrameToExamine
+nFrames = length(desinusoidedMovie);
+if (p.Results.WhichFrame > 0)
+    theFramesToExamine = p.Results.WhichFrame;
+else
+    theFramesToExamine = 1:nFrames;
+end
+for frameIdx = theFramesToExamine
     if (p.Results.verbose)
         fprintf('Starting registration for frame %d\n',frameIdx);
     end
@@ -57,21 +70,22 @@ for frameIdx = theFrameToExamine
     %% Strip increments one line at a time.
     %
     % Calculate number of strips that we will align in one frame.
-    lineIncrement = 1;
-    nStrips = imagePara.H - (sysPara.stripSize-lineIncrement);
+    nStrips = imagePara.H - (sysPara.stripSize-p.Results.LineIncrementline);
     
     %% Genereate ROI from reference image according to the sysPara.ROIx,sysPara.ROIy.
     % First create an expanded image according to sysPara.ROIx,sysPara.ROIy
     % parameters, then put reference image in the center.
-    padValue = 255;
-    roiImage = padValue*(ones(2*sysPara.ROIy+imagePara.H,2*sysPara.ROIx+imagePara.W));
-    roiImage = uint8(roiImage);
-    roiImage(sysPara.ROIy+1:(sysPara.ROIy+imagePara.H),...
+    paddedReferenceImage = p.Results.PadValue*(ones(2*sysPara.ROIy+imagePara.H,2*sysPara.ROIx+imagePara.W));
+    paddedReferenceImage = uint8(paddedReferenceImage);
+    paddedReferenceImage(sysPara.ROIy+1:(sysPara.ROIy+imagePara.H),...
         sysPara.ROIx+1:(sysPara.ROIx+imagePara.W))...
         = refImage;
     
     %% Get all of the strips out of the current frame.
     % In a real time algorithm we would do this one strip at a time.
+    %
+    % This code needs to be modified to handle line increments greater than
+    % 1.
     for i = 1:nStrips
         stripStart = i;
         stripData(:,:,i) = curImage(stripStart:(stripStart+sysPara.stripSize-1),:);
@@ -101,7 +115,7 @@ for frameIdx = theFrameToExamine
                 % Pull out a reference strip from the padded reference
                 searchStripStartx = dx+searchStripUpLeftx;
                 searchStripStarty = dy+searchStripUpLefty;
-                searchStrip = roiImage(searchStripStartx:...
+                searchStrip = paddedReferenceImage(searchStripStartx:...
                     (searchStripStartx+sysPara.stripSize-1),...
                     searchStripStarty:...
                     (searchStripStarty+imagePara.W-1));
