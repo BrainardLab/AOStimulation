@@ -66,8 +66,8 @@ for frameIdx = theFrameToExamine
     padValue = 255;
     roiImage = padValue*(ones(2*sysPara.ROIy+imagePara.H,2*sysPara.ROIx+imagePara.W));
     roiImage = uint8(roiImage);
-    roiImage(sysPara.ROIy:(sysPara.ROIy+imagePara.H-1),...
-        sysPara.ROIx:(sysPara.ROIx+imagePara.W-1))...
+    roiImage(sysPara.ROIy+1:(sysPara.ROIy+imagePara.H),...
+        sysPara.ROIx+1:(sysPara.ROIx+imagePara.W))...
         = refImage;
     
     %% Get all of the strips out of the current frame.
@@ -106,14 +106,20 @@ for frameIdx = theFrameToExamine
                     searchStripStarty:...
                     (searchStripStarty+imagePara.W-1));
                 
+                if (dx==-1) && (dy==-1)
+                    xxx=0;
+                end
+                if (dx==0) && (dy==0)
+                    xxx=0;
+                end
                 % calculate the similarity for this offset
                 theSimilarity = aoRegMatch(searchStrip,curStrip, ...
                     'SimilarityMethod',p.Results.SimilarityMethod);
                 
                 % Compare the results to what we've seen so far, always keeping
                 % the best similarity match.
-                if (theSimilarity>bestSimilarity)
-                    stripInfo(frameIdx,stripIdx).bestSimilarity = theSimilarity;
+                if (theSimilarity>=bestSimilarity)
+                    bestSimilarity = theSimilarity;
                     stripInfo(frameIdx,stripIdx).result = bestSimilarity;
                     stripInfo(frameIdx,stripIdx).dx = dx;
                     stripInfo(frameIdx,stripIdx).dy = dy;
