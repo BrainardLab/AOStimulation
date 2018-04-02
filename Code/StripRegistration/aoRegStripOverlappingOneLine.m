@@ -1,8 +1,8 @@
-function [stripInfo,registeredImage,paddedReferenceImage,status]=aoRegStripOverlappingOneLine(refImage,desinusoidedMovie,sysPara,imagePara,varargin)
+function [stripInfo,registeredMovie,paddedReferenceImage,status]=aoRegStripOverlappingOneLine(refImage,desinusoidedMovie,sysPara,imagePara,varargin)
 % Do registration with overlapping strips
 %
 % Syntax:
-%    [regImage,status]=aoRegStripOverlappingOneLine(refImage,desinusoidedMovie,sysPara,imagePara)
+%    [registeredMovie,status]=aoRegStripOverlappingOneLine(refImage,desinusoidedMovie,sysPara,imagePara)
 %
 % Description:
 %    Registration algorithm, early draft
@@ -20,7 +20,7 @@ function [stripInfo,registeredImage,paddedReferenceImage,status]=aoRegStripOverl
 % Outputs:
 %    stripInfo          - Registration information for each strip in each
 %                         frame in the input desinMovies
-%    registeredImage    - Registered image, based on estimate motion
+%    registeredMovie    - Registered movie, based on estimate motion
 %    paddedReferenceImage - The reference image as padded for registration.
 %    status             - Status tells if things are ok.  1 means OK, 0
 %                         means error.
@@ -50,16 +50,32 @@ p.addParameter('SimilarityMethod','NCC',@ischar);
 p.addParameter('WhichFrame',1,@isnumeric);
 p.addParameter('PadValue',0,@isnumeric);
 p.addParameter('verbose',true,@islogical);
+p.addParameter('LineIncrement',1,@isnumeric);
 p.parse(varargin{:});
 
 % Loop over movie frames
-nFrames = length(desinusoidedMovie);
 if (p.Results.WhichFrame > 0)
     theFramesToExamine = p.Results.WhichFrame;
 else
-    theFramesToExamine = 1:nFrames;
+    theFramesToExamine = 1:desinusoidedMovie(1).nFrames;
 end
-for frameIdx = theFramesToExamine
+
+%% Strip increments one line at a time.
+%
+% Calculate number of strips that we will align in one frame.
+nStrips = imagePara.H - (sysPara.stripSize-p.Results.LineIncrement);
+
+%% Genereate ROI from reference image according to the sysPara.ROIx,sysPara.ROIy.
+% First create an expanded image according to sysPara.ROIx,sysPara.ROIy
+% parameters, then put reference image in the center.
+paddedReferenceImage = p.Results.PadValue*(ones(2*sysPara.paddedSize+imagePara.H,2*sysPara.paddedSize+imagePara.W));
+paddedReferenceImage = uint8(paddedReferenceImage);
+paddedReferenceImage(sysPara.paddedSize+1:(sysPara.paddedSize+imagePara.H),...
+    sysPara.paddedSize+1:(sysPara.paddedSize+imagePara.W))...
+    = refImage;
+
+% frame loop for motion estimation
+for frameIdx = 1:4 %theFramesToExamine
     if (p.Results.verbose)
         fprintf('Starting registration for frame %d\n',frameIdx);
     end
@@ -67,28 +83,16 @@ for frameIdx = theFramesToExamine
     % Get the frane for registration
     curImage = desinusoidedMovie(frameIdx).cdata;
     
-    %% Strip increments one line at a time.
-    %
-    % Calculate number of strips that we will align in one frame.
-    nStrips = imagePara.H - (sysPara.stripSize-p.Results.LineIncrementline);
-    
-    %% Genereate ROI from reference image according to the sysPara.ROIx,sysPara.ROIy.
-    % First create an expanded image according to sysPara.ROIx,sysPara.ROIy
-    % parameters, then put reference image in the center.
-    paddedReferenceImage = p.Results.PadValue*(ones(2*sysPara.ROIy+imagePara.H,2*sysPara.ROIx+imagePara.W));
-    paddedReferenceImage = uint8(paddedReferenceImage);
-    paddedReferenceImage(sysPara.ROIy+1:(sysPara.ROIy+imagePara.H),...
-        sysPara.ROIx+1:(sysPara.ROIx+imagePara.W))...
-        = refImage;
-    
-    %% Get all of the strips out of the current frame.
+   %% Get all of the strips out of the current frame.
     % In a real time algorithm we would do this one strip at a time.
     %
     % This code needs to be modified to handle line increments greater than
     % 1.
+    
     for i = 1:nStrips
         stripStart = i;
         stripData(:,:,i) = curImage(stripStart:(stripStart+sysPara.stripSize-1),:);
+        
     end
     
     %% Register each strip to the padded reference image
@@ -101,10 +105,31 @@ for frameIdx = theFramesToExamine
         end
         
         % Get current strip, as computed above
+        
+        
         curStrip = stripData(:,:,stripIdx);
         
-        searchStripUpLeftx = stripIdx+sysPara.ROIx;
-        searchStripUpLefty = 1+sysPara.ROIy;
+        searchStripUpLeftx = stripIdx+sysPara.paddedSize;
+        searchStripUpLefty = 1+sysPara.paddedSize;
+        % Get the offset of search strip, base one last frame. If we have
+        % searched the last strip in one frame, we use the movement as the
+        % first strip offset in the next frame
+        if (stripIdx==1 && frameIdx>1)
+            offsetSearchx = stripInfo(frameIdx-1,fix(nStrips/2)).dx;
+            offsetSearchy = stripInfo(frameIdx-1,fix(nStrips/2)).dy;
+        end
+        if (stripIdx>1)
+            offsetSearchx = stripInfo(frameIdx,stripIdx-1).dx;
+            offsetSearchy = stripInfo(frameIdx,stripIdx-1).dy;
+        end
+        if (stripIdx==1 && frameIdx==1)
+            offsetSearchx = 0;
+            offsetSearchy = 0;
+        end
+        %Add offset
+        searchStripUpLeftx = searchStripUpLeftx + offsetSearchx;
+        searchStripUpLefty = searchStripUpLefty + offsetSearchy; 
+        %initial the similarity to very small value
         bestSimilarity = -Inf;
         
         % Here we loop over all possible regions of the reference image and
@@ -115,17 +140,41 @@ for frameIdx = theFramesToExamine
                 % Pull out a reference strip from the padded reference
                 searchStripStartx = dx+searchStripUpLeftx;
                 searchStripStarty = dy+searchStripUpLefty;
+                %judge if the search exceed the border
+%                 if (searchStripStartx <= 0)
+%                     searchStripStartx = 1;
+%                 end
+%                 if (searchStripStarty <= 0)
+%                     searchStripStarty = 1;
+%                 end
+                %Generate the search strip
                 searchStrip = paddedReferenceImage(searchStripStartx:...
                     (searchStripStartx+sysPara.stripSize-1),...
                     searchStripStarty:...
                     (searchStripStarty+imagePara.W-1));
-                
-                if (dx==-1) && (dy==-1)
-                    xxx=0;
-                end
-                if (dx==0) && (dy==0)
-                    xxx=0;
-                end
+                %remove the padded effection by only calculating the strip
+                % in the image area
+%                 if (searchStripStartx<sysPara.paddedSize)
+%                     searchStripStartx1 = 1;
+%                     searchStripEndx1 = sysPara.stripSize - (sysPara.paddedSize - searchStripStartx);
+%                 end
+%                 if (searchStripStartx>sysPara.paddedSize)
+%                     searchStripStartx1 = searchStripStartx - sysPara.paddedSize;
+%                     searchStripEndx1 = sysPara.stripSize-(searchStripStartx - sysPara.paddedSize);
+%                 end
+%                 if (searchStripStarty<sysPara.paddedSize)
+%                     searchStripStarty1 = 1;
+%                     searchStripEndy1 = imagePara.W - (sysPara.paddedSize - searchStripStarty)-1;
+%                 end
+%                 if (searchStripStarty>sysPara.paddedSize)
+%                     searchStripStarty1 = searchStripStarty - sysPara.paddedSize;
+%                     searchStripEndy1 = imagePara.W-(searchStripStarty - sysPara.paddedSize)-1;
+%                 end
+                % limit the strips to remove the padded pixels
+%                 searchStrip1 = searchStrip(searchStripStartx1:searchStripEndx1,...
+%                                           searchStripStarty1:searchStripEndy1);
+%                 curStrip1 = curStrip(searchStripStartx1:searchStripEndx1,...
+%                                           searchStripStarty1:searchStripEndy1);                      
                 % calculate the similarity for this offset
                 theSimilarity = aoRegMatch(searchStrip,curStrip, ...
                     'SimilarityMethod',p.Results.SimilarityMethod);
@@ -135,8 +184,8 @@ for frameIdx = theFramesToExamine
                 if (theSimilarity>=bestSimilarity)
                     bestSimilarity = theSimilarity;
                     stripInfo(frameIdx,stripIdx).result = bestSimilarity;
-                    stripInfo(frameIdx,stripIdx).dx = dx;
-                    stripInfo(frameIdx,stripIdx).dy = dy;
+                    stripInfo(frameIdx,stripIdx).dx = dx + offsetSearchx;
+                    stripInfo(frameIdx,stripIdx).dy = dy + offsetSearchy;
                 end
             end
         end
@@ -148,12 +197,12 @@ for frameIdx = theFramesToExamine
     % only happen if there is no movement.)
     %
     % This might turn into its own function soon.
-    registeredImage = uint8((zeros(2*sysPara.ROIy+imagePara.H,2*sysPara.ROIx+imagePara.W)));
+    registeredImage = uint8((zeros(2*sysPara.paddedSize+imagePara.H,2*sysPara.paddedSize+imagePara.W)));
     for stripIdx = 1:nStrips
         
         % Calculate the up left point of the strip
-        searchStripUpLeftx = stripIdx+sysPara.ROIx;
-        searchStripUpLefty = 1+sysPara.ROIy;
+        searchStripUpLeftx = stripIdx+sysPara.paddedSize;
+        searchStripUpLefty = 1+sysPara.paddedSize;
         regStripStartx = stripInfo(frameIdx,stripIdx).dx+searchStripUpLeftx;
         regStripStarty = stripInfo(frameIdx,stripIdx).dy+searchStripUpLefty;
         
@@ -162,9 +211,12 @@ for frameIdx = theFramesToExamine
             regStripStarty:(regStripStarty+imagePara.W-1)) = stripData(:,:,stripIdx);
         
     end
-    
+    % output movie
+    registeredMovie(:,:,frameIdx) = registeredImage;
+        
+    xx=0;
 end
-
+    registeredMovie = uint8(registeredMovie);
 %% Report status.
 %
 % For now, always OK.
