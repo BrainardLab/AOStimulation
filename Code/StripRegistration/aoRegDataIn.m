@@ -41,11 +41,9 @@ imagePara.H = video.Height;
 imagePara.W = video.Width;
 %%%Rate = video.FrameRate;
 
-
 % Transfer image data into rawMovies, for simple test parpare 20 frame. the whole frame should be imagePara.nFrames
-nFramesToReturn = 4;
-rawMovies(1:nFramesToReturn ) = struct('cdata',zeros(imagePara.H,imagePara.W,3,'uint8'),'colormap',[]);
-for i = 1:nFramesToReturn 
+rawMovies(1:video.NumberOfFrames) = struct('cdata',zeros(imagePara.H,imagePara.W,3,'uint8'),'colormap',[]);
+for i = 1:video.NumberOfFrames 
     rawMovies(i).cdata = read(video,i);
 end
 

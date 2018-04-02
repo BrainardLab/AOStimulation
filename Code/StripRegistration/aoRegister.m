@@ -16,14 +16,21 @@ clear; close all;
 
 %% Choices
 similarityMethod = 'NCC';
+
+% Which frame or frames to analyze. 0 means
+% all frames.
 whichFrame = 0;
-if (whichFrame == 0)
-    whichFrameToAnalyze = 2;
-else
-    whichFrameToAnalyze = whichFrame;
-end
-% Update one strip, only LineIncrementline is added to the new strip
+
+% Truncate movie at most this length. 0 means
+% do the whole movie.
+maxMovieLength = 4;
+
+% Strip increment information
+%
+% lineIncrement old lines are removed from the top of
+% the previous strip and lineIncrement new lines are added to the bottom.
 lineIncrement = 1;
+
 %% System parameters
 %
 % stripSize - vertical size of registration strip in rows
@@ -31,11 +38,13 @@ lineIncrement = 1;
 %             we'll align incoming data to.
 sysPara.stripSize = 8;
 sysPara.blockSize = 8;
+
 % For padded image, the increased size
 sysPara.paddedSize = 250;
+
 % Define where we think the block might be. This limits the
 % amount of searching that we have to do.
-sysPara.ROIx = 6;
+sysPara.ROIx = 16;
 sysPara.ROIy = sysPara.ROIx;
 
 %% Desinusoider parameters. Not yet used.
@@ -59,6 +68,10 @@ end
 %% Step 1
 % Read the movie and ref image
 [refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile);
+if (maxMovieLength > 0 & length(desinMovies) > maxMovieLength)
+    desinMovies = desinMovies(1:maxMovieLength);
+end
+actualMovieLength = length(desinMovies);
 
 %% Step 2
 % Desinusoiding. Not yet implemented
@@ -82,24 +95,37 @@ end
 
 
 %% Analyze results
- figure; imshow(refImage);
- figure; imshow(registeredMovie(:,:,2));
-% 
-% dxValues = [stripInfo(whichFrameToAnalyze,:).dx];
-% dyValues = [stripInfo(whichFrameToAnalyze,:).dy];
-% figure; hold on
-% plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
-% plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','g');
-% ylim([-sysPara.ROIx sysPara.ROIx]);
-% ylabel('Displacement (pixels)')
-% xlabel('Strip number');
-% 
-% % Report largest strip-by-strip shifts
-% maxLineDx = max(abs(diff(dxValues)));
-% maxLineDy = max(abs(diff(dyValues)));
-% fprintf('Maximum dx difference: %d, maximum dy  difference: %d\n',maxLineDx,maxLineDy);
-% 
-% % Show the single frame we are analyzing
-% figure; imshow(desinMovies(whichFrameToAnalyze).cdata);
+% figure; imshow(refImage);
+ 
+ % Make plots showing movement for each frame we analyzed
+ for ii = 1:actualMovieLength
+     % Get movement data for this frame
+     dxValues = [stripInfo(ii,:).dx];
+     dyValues = [stripInfo(ii,:).dy];
+     
+     % Plot movement data
+     figure; hold on
+     plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
+     plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
+     ylim([-3*sysPara.ROIx 3*sysPara.ROIx]);
+     ylabel('Displacement (pixels)')
+     xlabel('Strip number');
+     title(sprintf('Frame %d',ii));
+     
+     % Report largest strip-by-strip shifts
+     maxLineDx = max(abs(diff(dxValues)));
+     maxLineDy = max(abs(diff(dyValues)));
+     fprintf('Frame %d, maximum dx difference: %d, maximum dy  difference: %d\n',ii,maxLineDx,maxLineDy);
+     
+     % Show the frame
+     figure;
+     subplot(1,2,1);
+     imshow(desinMovies(ii).cdata);
+     title(sprintf('Input frame %d',ii));
+     subplot(1,2,2);
+     imshow(registeredMovie(:,:,ii));
+     title(sprintf('Registered frame %d',ii));
+
+ end
 
 
