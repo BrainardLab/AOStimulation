@@ -12,7 +12,7 @@
 %   03/14/18  tyh   
 
 %% Clear out workspace
-clear; close all;
+clear; close all;tic;
 
 %% Choices
 similarityMethod = 'NCC';
@@ -39,13 +39,20 @@ lineIncrement = 1;
 sysPara.stripSize = 8;
 sysPara.blockSize = 8;
 
-% For padded image, the increased size
-sysPara.paddedSize = 250;
+% Shrink image to search the necessary part, it may help improve the 
+% similarity and reduce the computation cost.
+sysPara.shrinkSize = 150;
+
+% the threshold of similarity 
+sysPara.similarityThrBig = 0.7;
+sysPara.similarityThrSmall = 0.5;
 
 % Define where we think the block might be. This limits the
 % amount of searching that we have to do.
-sysPara.ROIx = 16;
-sysPara.ROIy = sysPara.ROIx;
+sysPara.searchRangeBigx = 140;
+sysPara.searchRangeBigy = 140;
+sysPara.searchRangeSmallx = 16;
+sysPara.searchRangeSmally = 16;
 
 %% Desinusoider parameters. Not yet used.
 desinArray = [];
@@ -56,7 +63,10 @@ desinArray = [];
 % for now.  Later, we may explicitly have a pre-computed reference image.
 
 % Quick and dirty way to tell Hong and David's computers apart.  Will move
-% to ToolboxToolbox someday for this.
+% to ToolboxToolbox someday for this. 
+% test avi :
+% NC_11002_20160405_OD_confocal_0116_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0124_desinusoided.avi
 if (ispc)
     movieFile = '.\data\NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
     refImageFile = "";
@@ -67,7 +77,7 @@ end
 
 %% Step 1
 % Read the movie and ref image
-[refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile);
+[refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength);
 if (maxMovieLength > 0 & length(desinMovies) > maxMovieLength)
     desinMovies = desinMovies(1:maxMovieLength);
 end
@@ -96,7 +106,15 @@ actualMovieLength = length(desinMovies);
 
 %% Analyze results
 % figure; imshow(refImage);
- 
+% keep refImage center area for better comparison .
+centerWidth = imagePara.W-2*sysPara.shrinkSize;
+centerHeight = imagePara.H-2*sysPara.shrinkSize;
+refImage1 = uint8((zeros(imagePara.H,imagePara.W)));
+refImage1((sysPara.shrinkSize+1):(sysPara.shrinkSize+centerHeight)...
+         ,(sysPara.shrinkSize+1):(sysPara.shrinkSize+centerWidth) ...
+         ) = refImage((sysPara.shrinkSize+1):(sysPara.shrinkSize+centerHeight) ...
+         ,(sysPara.shrinkSize+1):(sysPara.shrinkSize+centerWidth) ...
+         );
  % Make plots showing movement for each frame we analyzed
  for ii = 1:actualMovieLength
      % Get movement data for this frame
@@ -107,8 +125,16 @@ actualMovieLength = length(desinMovies);
      figure; hold on
      plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
      plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
-     ylim([-3*sysPara.ROIx 3*sysPara.ROIx]);
+     ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
      ylabel('Displacement (pixels)')
+     xlabel('Strip number');
+     title(sprintf('Frame %d',ii));
+     
+     %report the matching result? CC value 
+     bestSimilarity = [stripInfo(ii,:).result];
+     figure; 
+     plot(1:length(bestSimilarity),bestSimilarity,'ro','MarkerSize',6,'MarkerFaceColor','r');
+     ylabel('Similarity')
      xlabel('Strip number');
      title(sprintf('Frame %d',ii));
      
@@ -120,12 +146,14 @@ actualMovieLength = length(desinMovies);
      % Show the frame
      figure;
      subplot(1,2,1);
-     imshow(desinMovies(ii).cdata);
-     title(sprintf('Input frame %d',ii));
+     %imshow(desinMovies(ii).cdata);
+     imshow(refImage)
+     title(sprintf('ref frame %d',1));
      subplot(1,2,2);
      imshow(registeredMovie(:,:,ii));
      title(sprintf('Registered frame %d',ii));
 
  end
 
-
+t=toc;
+fprintf('cpu time is %d', t);
