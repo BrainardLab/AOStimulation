@@ -70,21 +70,12 @@ end
 
 %% Strip increments one line at a time.
 %
-%initial the center width
+%Initial the search center width and height
 centerWidth = imagePara.W-2*sysPara.shrinkSize;
 centerHeight = imagePara.H-2*sysPara.shrinkSize;
 
 % Calculate number of strips that we will align in one frame.
 nStrips = centerHeight - (sysPara.stripSize-p.Results.LineIncrement);
-
-%% Genereate ROI from reference image according to the sysPara.paddedSize.
-% First create an expanded image according to sysPara.searchRangeSmallx,sysPara.ROIy
-% Parameters, then put reference image in the center.
-% paddedReferenceImage = p.Results.PadValue*(ones(2*sysPara.paddedSize+imagePara.H,2*sysPara.paddedSize+imagePara.W));
-% paddedReferenceImage = uint8(paddedReferenceImage);
-% paddedReferenceImage(sysPara.paddedSize+1:(sysPara.paddedSize+imagePara.H),...
-%     sysPara.paddedSize+1:(sysPara.paddedSize+imagePara.W))...
-%     = refImage;
 
 %Initialize the search range
 % searchRangex = sysPara.searchRangeSmallx;
@@ -92,6 +83,8 @@ nStrips = centerHeight - (sysPara.stripSize-p.Results.LineIncrement);
 searchRangex = sysPara.searchRangeBigx;
 searchRangey = sysPara.searchRangeBigy;
 
+%Initial the best similarity
+bestSimilarity = -inf;
 
 %% Frame loop for motion estimation
 for frameIdx = 1:length(desinusoidedMovie)
@@ -103,12 +96,13 @@ for frameIdx = 1:length(desinusoidedMovie)
     curImage = desinusoidedMovie(frameIdx).cdata;
     
     % Initial bigMovementFlag. When big movement appears the 
-    %  bigMovementFlag = 1;
     bigMovementFlag = 0;
+    
+    %Initial the abnormal count. The abnormal means the small similarity.
+    StripsAbnormalCount = 0;
     
     % Get all of the strips out of the current frame.
     % In a real time algorithm we would do this one strip at a time.
-    
     for i = 1:nStrips
         stripStart = i+sysPara.shrinkSize;
         stripData(:,:,i) = curImage(stripStart:(stripStart+sysPara.stripSize-1),sysPara.shrinkSize+1:centerWidth+sysPara.shrinkSize);
@@ -119,10 +113,10 @@ for frameIdx = 1:length(desinusoidedMovie)
         if (p.Results.verbose)
             printN = 20;
             if (rem(stripIdx,printN) == 0)
-                fprintf('\tStarting registration for strip %d of %d\n',stripIdx,nStrips);
+                fprintf('\tStarting registration for strip %d of %d',stripIdx,nStrips);
+                fprintf('\tSimilarity is equal to %d\n', bestSimilarity);
             end
         end
-        
         
         % Get current strip. Choose the center part
         curStrip = stripData(:,:,stripIdx);
@@ -180,7 +174,19 @@ for frameIdx = 1:length(desinusoidedMovie)
                 % Pull out a reference strip from the padded reference
                 searchStripStartx = dx+searchStripUpLeftx;
                 searchStripStarty = dy+searchStripUpLefty;
-               
+                
+                %Limit the start range to prevent overflow
+                if (searchStripStartx < 1)
+                    searchStripStartx = 1;
+                elseif (searchStripStartx > imagePara.H-sysPara.stripSize)
+                    searchStripStartx = imagePara.H-sysPara.stripSize;
+                end
+                if (searchStripStarty < 1)
+                    searchStripStarty = 1;
+                elseif (searchStripStarty > imagePara.W-centerWidth)
+                    searchStripStarty = imagePara.W-centerWidth;
+                end
+                                
                 %Generate the search strip
                 searchStrip = refImage(searchStripStartx:...
                     (searchStripStartx+sysPara.stripSize-1),...
@@ -193,13 +199,14 @@ for frameIdx = 1:length(desinusoidedMovie)
                 
                 % Compare the results to what we've seen so far, always keeping
                 % the best similarity match.
-                if (theSimilarity>=bestSimilarity)
+                if (theSimilarity>bestSimilarity)
                     bestSimilarity = theSimilarity;
                     dxTemp = dx;
                     dyTemp = dy;
                 end
             end
         end
+        
         % Keeping the best similarity match
         stripInfo(frameIdx,stripIdx).result = bestSimilarity;
         
@@ -229,21 +236,24 @@ for frameIdx = 1:length(desinusoidedMovie)
             searchRangey = sysPara.searchRangeBigy;
             bigMovementFlag = 1;
         end
-    
-    end
-    
-    % If last frame appear very small similarity, it means some thing
-    % wrong. Adjust the search area to big in order to get the best matching.
-    if (min([stripInfo(frameIdx,:).result])<sysPara.similarityThrSmall)
-        searchRangex = sysPara.searchRangeBigx;
-        searchRangey = sysPara.searchRangeBigy;
-        bigMovementFlag = 1;
-    else
-        searchRangex = sysPara.searchRangeSmallx;
-        searchRangey = sysPara.searchRangeSmally;
-        bigMovementFlag = 0;
-    end
         
+        % if the next 3 strips has small similarity, stop this frame search
+        if (bigMovementFlag)
+            StripsAbnormalCount = StripsAbnormalCount +1;
+        else
+            StripsAbnormalCount = 0;
+        end
+        if (StripsAbnormalCount==sysPara.maxStripsAbnormalCount)
+            for iz=stripIdx:nStrips
+                stripInfo(frameIdx,iz).result = 0;
+                stripInfo(frameIdx,iz).dx =  0;
+                stripInfo(frameIdx,iz).dy =  0;
+            end
+            StripsAbnormalCount = 0;
+            break;
+        end
+    end
+           
     % Reconstruct a registered image given the motion estimate we obtained
     % above. This sits in the padded coordinate frame, because there is
     % no guarantee that it will fit exactly in the original size (that would
@@ -271,6 +281,7 @@ for frameIdx = 1:length(desinusoidedMovie)
     % Store this registered frame for output
     registeredMovie(:,:,frameIdx) = registeredImage;
     
+    %For debug
     disp breakinghere;
 end
 

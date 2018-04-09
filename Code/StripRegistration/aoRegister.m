@@ -23,7 +23,7 @@ whichFrame = 0;
 
 % Truncate movie at most this length. 0 means
 % do the whole movie.
-maxMovieLength = 4;
+maxMovieLength = 30;
 
 % Strip increment information
 %
@@ -47,7 +47,12 @@ sysPara.shrinkSize = 150;
 sysPara.similarityThrBig = 0.7;
 sysPara.similarityThrSmall = 0.5;
 
-% Define where we think the block might be. This limits the
+% When strips search similairy is less than sysPara.similarityThrSmall,
+% the counter plus 1. If the next sysPara.maxStripsAbnormalCount strips 
+% are less than sysPara.similarityThrSmall, we discard current frame.
+sysPara.maxStripsAbnormalCount=2;
+
+% Define search range. This limits the
 % amount of searching that we have to do.
 sysPara.searchRangeBigx = 140;
 sysPara.searchRangeBigy = 140;
@@ -67,8 +72,10 @@ desinArray = [];
 % test avi :
 % NC_11002_20160405_OD_confocal_0116_desinusoided.avi
 % NC_11002_20160405_OD_confocal_0124_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0128_desinusoided
+% NC_11002_20160405_OD_confocal_0136
 if (ispc)
-    movieFile = '.\data\NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
+    movieFile = '.\data\NC_11002_20160405_OD_confocal_0136.avi';
     refImageFile = "";
 else
     movieFile = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies/NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
@@ -105,55 +112,72 @@ actualMovieLength = length(desinMovies);
 
 
 %% Analyze results
-% figure; imshow(refImage);
-% keep refImage center area for better comparison .
-centerWidth = imagePara.W-2*sysPara.shrinkSize;
-centerHeight = imagePara.H-2*sysPara.shrinkSize;
-refImage1 = uint8((zeros(imagePara.H,imagePara.W)));
-refImage1((sysPara.shrinkSize+1):(sysPara.shrinkSize+centerHeight)...
-         ,(sysPara.shrinkSize+1):(sysPara.shrinkSize+centerWidth) ...
-         ) = refImage((sysPara.shrinkSize+1):(sysPara.shrinkSize+centerHeight) ...
-         ,(sysPara.shrinkSize+1):(sysPara.shrinkSize+centerWidth) ...
-         );
- % Make plots showing movement for each frame we analyzed
- for ii = 1:actualMovieLength
-     % Get movement data for this frame
-     dxValues = [stripInfo(ii,:).dx];
-     dyValues = [stripInfo(ii,:).dy];
-     
-     % Plot movement data
-     figure; hold on
-     plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
-     plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
-     ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
-     ylabel('Displacement (pixels)')
-     xlabel('Strip number');
-     title(sprintf('Frame %d',ii));
-     
-     %report the matching result? CC value 
-     bestSimilarity = [stripInfo(ii,:).result];
-     figure; 
-     plot(1:length(bestSimilarity),bestSimilarity,'ro','MarkerSize',6,'MarkerFaceColor','r');
-     ylabel('Similarity')
-     xlabel('Strip number');
-     title(sprintf('Frame %d',ii));
-     
-     % Report largest strip-by-strip shifts
-     maxLineDx = max(abs(diff(dxValues)));
-     maxLineDy = max(abs(diff(dyValues)));
-     fprintf('Frame %d, maximum dx difference: %d, maximum dy  difference: %d\n',ii,maxLineDx,maxLineDy);
-     
-     % Show the frame
-     figure;
-     subplot(1,2,1);
-     %imshow(desinMovies(ii).cdata);
-     imshow(refImage)
-     title(sprintf('ref frame %d',1));
-     subplot(1,2,2);
-     imshow(registeredMovie(:,:,ii));
-     title(sprintf('Registered frame %d',ii));
+%  Initialize the total movement dx/dy
+dxValuesTotal = [];
+dyValuesTotal = [];
 
- end
+%Initialize all frames' similarity
+bestSimilarityTotal = [];
+     
+% Make plots showing movement for each frame we analyzed
+for ii = 1:actualMovieLength
+    % Get movement data for this frame
+    dxValues = [stripInfo(ii,:).dx];
+    dxValuesTotal = [dxValuesTotal dxValues];
+    dyValues = [stripInfo(ii,:).dy];
+    dyValuesTotal = [dyValuesTotal dyValues];
+    
+    % Plot movement data
+    figure; hold on
+    plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
+    plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
+    ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
+    ylabel('Displacement (pixels)')
+    xlabel('Strip number');
+    title(sprintf('Frame %d',ii));
+    
+    %report the matching result? CC value
+    bestSimilarity = [stripInfo(ii,:).result];
+    bestSimilarityTotal = [bestSimilarityTotal bestSimilarity];
+    figure;
+    plot(1:length(bestSimilarity),bestSimilarity,'ro','MarkerSize',6,'MarkerFaceColor','r');
+    ylabel('Similarity')
+    xlabel('Strip number');
+    title(sprintf('Frame %d',ii));
+    
+    % Report largest strip-by-strip shifts
+    maxLineDx = max(abs(diff(dxValues)));
+    maxLineDy = max(abs(diff(dyValues)));
+    fprintf('Frame %d, maximum dx difference: %d, maximum dy  difference: %d\n',ii,maxLineDx,maxLineDy);
+    
+    % Show the frame
+    figure;
+    subplot(1,2,1);
+    imshow(refImage)
+    title(sprintf('ref frame %d',1));
+    subplot(1,2,2);
+    imshow(registeredMovie(:,:,ii));
+    title(sprintf('Registered frame %d',ii));
+    
+end
 
+%plot the all frames' dy/dx
+figure; hold on
+plot(1:length(dxValuesTotal),dxValuesTotal,'ro','MarkerSize',3,'MarkerFaceColor','r');
+plot(1:length(dyValuesTotal),dyValuesTotal,'bo','MarkerSize',3,'MarkerFaceColor','b');
+ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
+ylabel('Displacement (pixels)')
+xlabel('Strip number');
+title(sprintf('All Frames displacement'));
+
+% plot all similarity
+bestSimilarityTotal = [bestSimilarityTotal bestSimilarity];
+figure;
+plot(1:length(bestSimilarityTotal),bestSimilarityTotal,'ro','MarkerSize',3,'MarkerFaceColor','r');
+ylabel('Similarity')
+xlabel('Strip number');
+title(sprintf('All Frames Similiary'));
+
+%calculate the runtime
 t=toc;
 fprintf('cpu time is %d', t);
