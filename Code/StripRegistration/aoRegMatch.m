@@ -52,7 +52,38 @@ switch (p.Results.SimilarityMethod)
         else
             theSimilarity = sum(sum(searchStrip.*curStrip))/sqrt(suma*sumb);
         end
-                
+    
+    case 'NCC1'
+        % Cross correlation's normalization
+        searchStrip = searchStrip - mean2(searchStrip);
+        curStrip = curStrip - mean2(curStrip);
+        %reduce computation complexity by let pixel=0/1.
+        [s1,s2] = size(searchStrip);
+        for i=1:s1
+            for j=1:s2
+                if (searchStrip(i,j)<0)
+                    searchStrip(i,j)=0;
+                else
+                    searchStrip(i,j)=1;
+                end
+                if (curStrip(i,j)<0)
+                    curStrip(i,j)=0;
+                else
+                    curStrip(i,j)=1;
+                end
+            end
+            
+        end
+        
+        %calculate cross correlation
+        suma=sum(sum(searchStrip.*searchStrip));
+        sumb=sum(sum(curStrip.*curStrip));
+        if (suma == 0 || sumb == 0)
+            theSimilarity = 0;
+        else
+            theSimilarity = sum(sum(searchStrip.*curStrip))/sqrt(suma*sumb);
+        end
+        
     case 'sad'
         % Sum of absolute differences. Might be faster in hardware.
         error('SAD method not yet implemented');
