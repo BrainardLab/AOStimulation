@@ -15,7 +15,7 @@
 clear; close all;tic;
 
 %% Choices
-similarityMethod = 'NCC';
+similarityMethod = 'NCC1';
 
 % Which frame or frames to analyze. 0 means
 % all frames.
@@ -23,7 +23,7 @@ whichFrame = 0;
 
 % Truncate movie at most this length. 0 means
 % do the whole movie.
-maxMovieLength = 30;
+maxMovieLength = 4;
 
 % Strip increment information
 %
@@ -59,6 +59,38 @@ sysPara.searchRangeBigy = 140;
 sysPara.searchRangeSmallx = 16;
 sysPara.searchRangeSmally = 16;
 
+%define the stimulus position
+sysPara.stimulusPositionx=210;
+sysPara.stimulusPositiony=360;
+
+%timing parameters for the AOSLO
+%clock frequency
+sysPara.pixClkFreq = 20 * 10^6;
+sysPara.pixTime = 10^9/sysPara.pixClkFreq;
+
+%horizontal paramters in pixels
+sysPara.hrSync = 8;
+sysPara.hrBackPorch = 115;
+sysPara.hrActive = 512;
+sysPara.hrFrontPorch = 664;
+
+%time for very line (unit ns)
+sysPara.timePerLine = (sysPara.hrSync + sysPara.hrBackPorch...
+                      +sysPara.hrActive+sysPara.hrFrontPorch)...
+                      *sysPara.pixTime;
+                  
+
+%vertical / frame parameters in lines.
+sysPara.vtSync = 10;
+sysPara.vtBackPorch = 30;
+sysPara.vtActive = 512;
+sysPara.vtFrontPorch = 228;
+%time for very frame (unit ns)
+sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
+                      +sysPara.vtActive+sysPara.vtFrontPorch)...
+                      *sysPara.timePerLine;
+
+
 %% Desinusoider parameters. Not yet used.
 desinArray = [];
 
@@ -71,11 +103,12 @@ desinArray = [];
 % to ToolboxToolbox someday for this. 
 % test avi :
 % NC_11002_20160405_OD_confocal_0116_desinusoided.avi
-% NC_11002_20160405_OD_confocal_0124_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0136_desinusoided
 % NC_11002_20160405_OD_confocal_0128_desinusoided
-% NC_11002_20160405_OD_confocal_0136
+% NC_11002_20160405_OD_confocal_0133_desinusoided
+% NC_11002_20160405_OD_confocal_0124_desinusoided
 if (ispc)
-    movieFile = '.\data\NC_11002_20160405_OD_confocal_0136.avi';
+    movieFile = '.\data\NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
     refImageFile = "";
 else
     movieFile = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies/NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
@@ -110,6 +143,9 @@ actualMovieLength = length(desinMovies);
 % Method 3: block registration
 %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
 
+%step 4: compute the time when it takes from current strip to stimulus
+% position
+predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
 
 %% Analyze results
 %  Initialize the total movement dx/dy
@@ -162,21 +198,59 @@ for ii = 1:actualMovieLength
 end
 
 %plot the all frames' dy/dx
-figure; hold on
-plot(1:length(dxValuesTotal),dxValuesTotal,'ro','MarkerSize',3,'MarkerFaceColor','r');
-plot(1:length(dyValuesTotal),dyValuesTotal,'bo','MarkerSize',3,'MarkerFaceColor','b');
-ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
+frame_length = length(dxValuesTotal)/actualMovieLength;
+
+%figure for displacement
+figure;hold on
+for ii=1:actualMovieLength
+    dxValues=dxValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
+    dyValues=dyValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
+    if (mod(ii,2)==0)
+        plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'ro','MarkerSize',3,'MarkerFaceColor','r');
+        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'bo','MarkerSize',3,'MarkerFaceColor','b');
+    else
+        plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'go','MarkerSize',3,'MarkerFaceColor','g');
+        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'yo','MarkerSize',3,'MarkerFaceColor','y');
+    end
+
+%         plot(ii,dxValuesTotal(ii),'o','color',[bestSimilarityTotal(ii) 0 0],'MarkerFaceColor',[bestSimilarityTotal(ii) 0 0]);
+%         plot(ii,dyValuesTotal(ii),'o','color',[0 0 bestSimilarityTotal(ii)],'MarkerFaceColor',[0 0 bestSimilarityTotal(ii)]);
+    
+    ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
+end
 ylabel('Displacement (pixels)')
 xlabel('Strip number');
 title(sprintf('All Frames displacement'));
+hold off
 
 % plot all similarity
-bestSimilarityTotal = [bestSimilarityTotal bestSimilarity];
-figure;
-plot(1:length(bestSimilarityTotal),bestSimilarityTotal,'ro','MarkerSize',3,'MarkerFaceColor','r');
+figure;hold on
+for ii=1:actualMovieLength
+    bestSimilarity1=bestSimilarityTotal(1+(ii-1)*frame_length:ii*frame_length);
+    if (mod(ii,2)==0)
+        plot(1+(ii-1)*frame_length:ii*frame_length,bestSimilarity1,'ro','MarkerSize',3,'MarkerFaceColor','r');
+    else
+        plot(1+(ii-1)*frame_length:ii*frame_length,bestSimilarity1,'go','MarkerSize',3,'MarkerFaceColor','g');
+    end
+end
 ylabel('Similarity')
 xlabel('Strip number');
 title(sprintf('All Frames Similiary'));
+hold off
+
+%plot prediction time
+figure;hold on
+for ii=1:actualMovieLength
+    if (mod(ii,2)==0)
+        plot(predTime(:,ii),'ro','MarkerSize',3,'MarkerFaceColor','r');
+    else
+        plot(predTime(:,ii),'go','MarkerSize',3,'MarkerFaceColor','g');
+    end
+end
+ylabel('Prediction Time')
+xlabel('Strip number');
+title(sprintf('Stimulus delivery estimation'));
+hold off
 
 %calculate the runtime
 t=toc;

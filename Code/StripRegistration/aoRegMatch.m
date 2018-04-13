@@ -54,36 +54,88 @@ switch (p.Results.SimilarityMethod)
         end
     
     case 'NCC1'
-        % Cross correlation's normalization
-        searchStrip = searchStrip - mean2(searchStrip);
-        curStrip = curStrip - mean2(curStrip);
-        %reduce computation complexity by let pixel=0/1.
+        %reduce computation complexity by binary pixels. Sort the pixel, set
+        % the 128 bigger pixels is 1 and others are 0 in one line.
+        % make sure sum of non zero pixels are 1024. 
+        % avoid the multiply, sqrt and divide computation.
+        % be good for small cone movies.
         [s1,s2] = size(searchStrip);
         for i=1:s1
+            pixelLineInSearchStrip=searchStrip(i,:);
+            [sortResult searchIdx]=sort(pixelLineInSearchStrip);
+            pixelLineIncurStrip=curStrip(i,:);
+            [sortResult curIdx]=sort(pixelLineIncurStrip);
             for j=1:s2
-                if (searchStrip(i,j)<0)
-                    searchStrip(i,j)=0;
+                if (j<(s2-127))
+                    searchStrip(i,searchIdx(j))=0;
+                    curStrip(i,curIdx(j))=0;
                 else
-                    searchStrip(i,j)=1;
-                end
-                if (curStrip(i,j)<0)
-                    curStrip(i,j)=0;
-                else
-                    curStrip(i,j)=1;
+                    searchStrip(i,searchIdx(j))=1;
+                    curStrip(i,curIdx(j))=1;
                 end
             end
             
         end
-        
+
         %calculate cross correlation
         suma=sum(sum(searchStrip.*searchStrip));
         sumb=sum(sum(curStrip.*curStrip));
+        t = sum(sum(searchStrip.*curStrip));
+        t1 = max(suma,sumb);
         if (suma == 0 || sumb == 0)
             theSimilarity = 0;
         else
-            theSimilarity = sum(sum(searchStrip.*curStrip))/sqrt(suma*sumb);
+            theSimilarity = t/t1;
+        end
+    case 'NCC2'
+        %Reduce computation complexity by binary pixels. make sure sum of
+        % non zero pixels are 1024. Get the edge data of current strips by 
+        % Prewitt. Sort the edge data and get the 128 edge point in one
+        % line.
+        
+        %Get the Size
+        [s1,s2] = size(searchStrip);
+        
+        % Use Prewwitt/gradiet to do edge select
+        for m=1:s1
+            for n=1:s2-4
+                curPrewitt(m,n) = abs(curStrip(m,n+3)-curStrip(m,n+1)...
+                                    +curStrip(m,n+4)-curStrip(m,n));
+                searchPrewitt(m,n) = abs(searchStrip(m,n+3)-searchStrip(m,n+1)...
+                                    +searchStrip(m,n+4)-searchStrip(m,n));
+            end
         end
         
+        % Binarize
+        [s1,s2] = size(searchPrewitt);
+        for i=1:s1
+            pixelLineInSearchStrip=searchPrewitt(i,:);
+            [sortResult searchIdx]=sort(pixelLineInSearchStrip);
+            pixelLineIncurStrip=curPrewitt(i,:);
+            [sortResult curIdx]=sort(pixelLineIncurStrip);
+            for j=1:s2
+                if (j<(s2-127))
+                    searchPrewitt(i,searchIdx(j))=0;
+                    curPrewitt(i,curIdx(j))=0;
+                else
+                    searchPrewitt(i,searchIdx(j))=1;
+                    curPrewitt(i,curIdx(j))=1;
+                end
+            end
+            
+        end
+
+        %calculate cross correlation
+        suma=sum(sum(searchPrewitt.*searchPrewitt));
+        sumb=sum(sum(curPrewitt.*curPrewitt));
+        t = sum(sum(searchPrewitt.*curPrewitt));
+        t1 = max(suma,sumb);
+        if (suma == 0 || sumb == 0)
+            theSimilarity = 0;
+        else
+            theSimilarity = t/t1;
+        end
+    
     case 'sad'
         % Sum of absolute differences. Might be faster in hardware.
         error('SAD method not yet implemented');

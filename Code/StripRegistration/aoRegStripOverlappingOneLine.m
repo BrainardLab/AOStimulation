@@ -13,7 +13,7 @@ function [stripInfo,registeredMovie,status]=aoRegStripOverlappingOneLine(refImag
 % Inputs:
 %    refImage           - Ref frame, used to registration.
 %    desinusoidedMovie  - Movies after desinusoiding
-%    sysPara            -
+%    sysPara            - system parameters
 %    imagePara          - Image parameters, such as size, frame number, and
 %                         so on
 %
@@ -100,6 +100,10 @@ for frameIdx = 1:length(desinusoidedMovie)
     
     %Initial the abnormal count. The abnormal means the small similarity.
     StripsAbnormalCount = 0;
+    
+    %Initial the current frame flag, frameAvailableFlag = 1 means it is
+    %good for registration.
+    stripInfo(frameIdx).frameAvailableFlag = 1;
     
     % Get all of the strips out of the current frame.
     % In a real time algorithm we would do this one strip at a time.
@@ -237,20 +241,37 @@ for frameIdx = 1:length(desinusoidedMovie)
             bigMovementFlag = 1;
         end
         
-        % if the next 3 strips has small similarity, stop this frame search
+        % If the next 3 strips has small similarity, stop this frame search
         if (bigMovementFlag)
             StripsAbnormalCount = StripsAbnormalCount +1;
         else
             StripsAbnormalCount = 0;
         end
+        
+        %If count to max, the search failed and give one flag to save this. 
         if (StripsAbnormalCount==sysPara.maxStripsAbnormalCount)
+            
+            %Set flag to 0, means this frame is bad for registration.
+            stripInfo(frameIdx).frameAvailableFlag = 0;
+            
+            %Set result to 0
             for iz=stripIdx:nStrips
                 stripInfo(frameIdx,iz).result = 0;
                 stripInfo(frameIdx,iz).dx =  0;
                 stripInfo(frameIdx,iz).dy =  0;
             end
+            
+            %reset the counter
             StripsAbnormalCount = 0;
+            
+            %quit the strip loop
             break;
+            
+        else
+            
+            %Set flag to 1, means this frame is bad for registration.
+            stripInfo(frameIdx).frameAvailableFlag = 1;
+            
         end
     end
            
@@ -269,6 +290,13 @@ for frameIdx = 1:length(desinusoidedMovie)
         regStripStartx = stripInfo(frameIdx,stripIdx).dx+searchStripUpLeftx;
         regStripStarty = stripInfo(frameIdx,stripIdx).dy+searchStripUpLefty;
         
+        %Limite the range to prevent overflow
+        if (regStripStartx < 1)
+            regStripStartx = 1;
+        end
+        if (regStripStarty < 1)
+            regStripStarty = 1;
+        end
         % Fill the regImage
 %         registeredImage(regStripStartx:(regStripStartx+sysPara.stripSize-1),...
 %             regStripStarty:(regStripStarty+centerWidth-1)) = stripData(:,:,stripIdx);
