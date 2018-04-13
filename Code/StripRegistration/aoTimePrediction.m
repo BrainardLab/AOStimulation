@@ -1,11 +1,11 @@
-function predTime =aoTimePrediction(stripInfo,sysPara,maxMovieLength);
+function predTime =aoTimePrediction(stripInfo,sysPara,maxMovieLength)
 % According to the current strip's movement, predict the time to stimulus
 %
 % Syntax:
-%    predTime =aoTimePrediction(stripInfo,sysPara,maxMovieLength)
+%    predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength)
 %
 % Description:
-%    time prediction, so that we can drive the stimulus laser of SOM
+%    Time prediction, so that we can drive the stimulus laser of SOM
 %
 % Inputs:
 %    stripInfo          - Registration information for each strip in each
@@ -23,10 +23,10 @@ function predTime =aoTimePrediction(stripInfo,sysPara,maxMovieLength);
 % History:
 %   04/10/18  tyh
 
-%strips numbers for target dilieray
+% Strips numbers for target dilieray
 nStrips = 1;
 
-%main loop
+% Main loop
 for frameIdx=2:maxMovieLength
     
     if (stripInfo(frameIdx).frameAvailableFlag == 1)

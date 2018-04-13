@@ -12,7 +12,30 @@
 %   03/14/18  tyh   
 
 %% Clear out workspace
-clear; close all;tic;
+clear; close all; tic;
+
+%% Define working directories
+%
+% This differentiates David and Hong's computers.
+if (ispc)
+    movieBaseDir = '.\data\';
+    outputBaseDir = '.data\TestOutput';
+    refImageFile = "";
+else
+    movieBaseDir  = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies';
+    outputBaseDir = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestOutput';
+end
+
+%% Define movie file
+%
+% Available files
+% NC_11002_20160405_OD_confocal_0116_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0136_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0128_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0133_desinusoided.avi
+% NC_11002_20160405_OD_confocal_0124_desinusoided.avi
+movieFile = fullfile(movieBaseDir,'NC_11002_20160405_OD_confocal_0116_desinusoided.avi');
+refImageFile = fullfile(movieBaseDir,'');
 
 %% Choices
 similarityMethod = 'NCC1';
@@ -102,21 +125,8 @@ desinArray = [];
 % Quick and dirty way to tell Hong and David's computers apart.  Will move
 % to ToolboxToolbox someday for this. 
 % test avi :
-% NC_11002_20160405_OD_confocal_0116_desinusoided.avi
-% NC_11002_20160405_OD_confocal_0136_desinusoided
-% NC_11002_20160405_OD_confocal_0128_desinusoided
-% NC_11002_20160405_OD_confocal_0133_desinusoided
-% NC_11002_20160405_OD_confocal_0124_desinusoided
-if (ispc)
-    movieFile = '.\data\NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
-    refImageFile = "";
-else
-    movieFile = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies/NC_11002_20160405_OD_confocal_0116_desinusoided.avi';
-    refImageFile = "";
-end
 
-%% Step 1
-% Read the movie and ref image
+%% Step 1: Read the movie and ref image
 [refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength);
 if (maxMovieLength > 0 & length(desinMovies) > maxMovieLength)
     desinMovies = desinMovies(1:maxMovieLength);
@@ -127,27 +137,35 @@ actualMovieLength = length(desinMovies);
 % Desinusoiding. Not yet implemented
 %[desinMovies] = aoRegDesin(desinArray,rawMovies);
 
-% Step 3
+%% Step 3
+%
 % Do registration
 
 % Method 1: No overlap between strips
-%strip registration
-%way 1: non overlap
 %[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
 
 % Method 2: Incremental line by line registration.
-%way 2: overlapping aoRegStripOverlapping
 [stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
     'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
+
+% Save the output of this method.  Name tracks which similarity method is
+% used.  Could add more parameters to name if there are key parameters we
+% want to vary and record output for.
+outputDir = fullfile(outputBaseDir,sprintf('Incremental_%s',similarityMethod));
+if (~exist(outputDir,'dir'))
+    mkdir(outputDir);
+end
+save(fullfile(outputDir,'RegistrationResults',stripInfo,registeredMovie,status,refImage,desinMovies,sysPara,imagePara));
+
 
 % Method 3: block registration
 %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
 
-%step 4: compute the time when it takes from current strip to stimulus
-% position
+%% Step 3: compute the time to stimulus position
 predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
 
 %% Analyze results
+%
 %  Initialize the total movement dx/dy
 dxValuesTotal = [];
 dyValuesTotal = [];
@@ -238,7 +256,7 @@ xlabel('Strip number');
 title(sprintf('All Frames Similiary'));
 hold off
 
-%plot prediction time
+% Plot prediction time
 figure;hold on
 for ii=1:actualMovieLength
     if (mod(ii,2)==0)

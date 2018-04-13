@@ -21,7 +21,9 @@ function theSimilarity = aoRegMatch(searchStrip,curStrip,varargin)
 %
 % Optional key/value pairs:
 %    'SimilarityMethod' - String, specify similarity method (default
-%                         'NCC').
+%                         'NCC').  Options are:
+%                           'NCC'  - Normalized cross correlation
+%                           'NCC1' - Binarized fast cross correlation 
 %
 % See also:
 %
@@ -54,7 +56,7 @@ switch (p.Results.SimilarityMethod)
         end
     
     case 'NCC1'
-        %reduce computation complexity by binary pixels. Sort the pixel, set
+        % reduce computation complexity by binary pixels. Sort the pixel, set
         % the 128 bigger pixels is 1 and others are 0 in one line.
         % make sure sum of non zero pixels are 1024. 
         % avoid the multiply, sqrt and divide computation.
@@ -77,7 +79,7 @@ switch (p.Results.SimilarityMethod)
             
         end
 
-        %calculate cross correlation
+        % calculate cross correlation
         suma=sum(sum(searchStrip.*searchStrip));
         sumb=sum(sum(curStrip.*curStrip));
         t = sum(sum(searchStrip.*curStrip));
@@ -88,12 +90,12 @@ switch (p.Results.SimilarityMethod)
             theSimilarity = t/t1;
         end
     case 'NCC2'
-        %Reduce computation complexity by binary pixels. make sure sum of
+        % Reduce computation complexity by binary pixels. make sure sum of
         % non zero pixels are 1024. Get the edge data of current strips by 
         % Prewitt. Sort the edge data and get the 128 edge point in one
         % line.
         
-        %Get the Size
+        % Get the Size
         [s1,s2] = size(searchStrip);
         
         % Use Prewwitt/gradiet to do edge select
