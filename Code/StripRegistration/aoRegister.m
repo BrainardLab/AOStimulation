@@ -34,8 +34,13 @@ end
 % NC_11002_20160405_OD_confocal_0128_desinusoided.avi
 % NC_11002_20160405_OD_confocal_0133_desinusoided.avi
 % NC_11002_20160405_OD_confocal_0124_desinusoided.avi
-movieFile = fullfile(movieBaseDir,'NC_11002_20160405_OD_confocal_0116_desinusoided.avi');
+movieFile = fullfile(movieBaseDir,'NC_11002_20160405_OD_confocal_0116.avi');
+
+%refer image file
 refImageFile = fullfile(movieBaseDir,'');
+
+% desinsoid array file
+desinArrayFile = 'vertical_fringes_desinusoid_matrix.mat';
 
 %% Choices
 similarityMethod = 'NCC1';
@@ -127,15 +132,19 @@ desinArray = [];
 % test avi :
 
 %% Step 1: Read the movie and ref image
-[refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength);
-if (maxMovieLength > 0 & length(desinMovies) > maxMovieLength)
-    desinMovies = desinMovies(1:maxMovieLength);
-end
-actualMovieLength = length(desinMovies);
+[refImage,rawMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength);
+actualMovieLength = maxMovieLength;
 
 %% Step 2
-% Desinusoiding. Not yet implemented
-%[desinMovies] = aoRegDesin(desinArray,rawMovies);
+% Desinusoiding. 
+load(desinArrayFile);
+desinMovies = aoRegDesin(vertical_fringes_desinusoid_matrix,rawMovies,maxMovieLength);
+
+%Currently set the first frame as ref image
+refImage = desinMovies(:,:,1);
+
+%Set the image size
+[imagePara.H,imagePara.W] = size(refImage);
 
 %% Step 3
 %
