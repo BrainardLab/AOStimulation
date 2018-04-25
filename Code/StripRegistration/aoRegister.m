@@ -14,12 +14,24 @@
 %% Clear out workspace
 clear; close all; tic;
 
+
+%Test case control
+testCase.desinusoid = 1;
+testCase.control = 0;
+testcase.registration = 0;
+
 %% Define working directories
 %
 % This differentiates David and Hong's computers.
 if (ispc)
     movieBaseDir = '.\data\';
-    outputBaseDir = '.data\TestOutput';
+    if (testCase.desinusoid==1 )
+        outputBaseDir = '.\data\TestOutput\desinusoid';
+    elseif (testcase.registration==1)
+        outputBaseDir = '.\data\TestOutput\registration';
+    else
+        outputBaseDir = '.\data\TestOutput\control';
+    end
     refImageFile = "";
 else
     movieBaseDir  = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies';
@@ -34,8 +46,13 @@ end
 % NC_11002_20160405_OD_confocal_0128_desinusoided.avi
 % NC_11002_20160405_OD_confocal_0133_desinusoided.avi
 % NC_11002_20160405_OD_confocal_0124_desinusoided.avi
-movieFile = fullfile(movieBaseDir,'NC_11002_20160405_OD_confocal_0116.avi');
-
+if (testCase.desinusoid == 1)
+    movieFile = fullfile(movieBaseDir,...
+        ['NC_11002_20160405_OD_confocal_0133\' 'NC_11002_20160405_OD_confocal_0133.avi']);
+else
+    movieFile = fullfile(movieBaseDir,...
+        ['NC_11002_20160405_OD_confocal_0133\' 'NC_11002_20160405_OD_confocal_0133_desinusoided.avi']);
+end
 %refer image file
 refImageFile = fullfile(movieBaseDir,'');
 
@@ -51,7 +68,7 @@ whichFrame = 0;
 
 % Truncate movie at most this length. 0 means
 % do the whole movie.
-maxMovieLength = 4;
+maxMovieLength = 2;
 
 % Strip increment information
 %
@@ -132,48 +149,85 @@ desinArray = [];
 % test avi :
 
 %% Step 1: Read the movie and ref image
-[refImage,rawMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength);
+[refImage,desinMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength);
 actualMovieLength = maxMovieLength;
 
 %% Step 2
 % Desinusoiding. 
+if (testCase.desinusoid == 1)
 load(desinArrayFile);
-desinMovies = aoRegDesin(vertical_fringes_desinusoid_matrix,rawMovies,maxMovieLength);
-
-%Currently set the first frame as ref image
-refImage = desinMovies(:,:,1);
-
-%Set the image size
-[imagePara.H,imagePara.W] = size(refImage);
-
-%% Step 3
-%
-% Do registration
-
-% Method 1: No overlap between strips
-%[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
-
-% Method 2: Incremental line by line registration.
-[stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
-    'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
-
-% Save the output of this method.  Name tracks which similarity method is
-% used.  Could add more parameters to name if there are key parameters we
-% want to vary and record output for.
-outputDir = fullfile(outputBaseDir,sprintf('Incremental_%s',similarityMethod));
-if (~exist(outputDir,'dir'))
-    mkdir(outputDir);
+[diffMax,diffMin,linePixelTimeTable,desinMovies,simpleDesinMovies] = aoRegDesin(vertical_fringes_desinusoid_matrix,desinMovies,maxMovieLength);
 end
-save(fullfile(outputDir,'RegistrationResults',stripInfo,registeredMovie,status,refImage,desinMovies,sysPara,imagePara));
+
+%Test case: desinusoid
+for testIdx = 1:2
+    
+    %Select test movie, the second iteration is for simplified desinsoid
+    %matrix
+    if (testIdx==2)
+       desinMovies = simpleDesinMovies;
+    end
+    
+    %Currently set the first frame as ref image
+    refImage = desinMovies(:,:,1);
+    
+    %Set the image size
+    [imagePara.H,imagePara.W] = size(refImage);
+    
+    %% Step 3
+    %
+    % Do registration
+    
+    % Method 1: No overlap between strips
+    %[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
+    
+    % Method 2: Incremental line by line registration.
+    [stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
+        'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
+    
+    % Method 3: block registration
+    %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
+    
+    %% Step 3: compute the time to stimulus position
+    if (testCase.desinusoid == 0)
+        predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength,linePixelTimeTable);
+    else
+        predTime = 0;
+    end
+    
+    % Save the output of this method.  Name tracks which similarity method is
+    % used.  Could add more parameters to name if there are key parameters we
+    % want to vary and record output for.
+    outputDir = fullfile(outputBaseDir,datestr(clock,30));
+    if (~exist(outputDir,'dir'))
+        mkdir(outputDir);
+    end
+    save(fullfile(outputDir,'testResults'),'stripInfo','registeredMovie','refImage','similarityMethod','desinMovies','sysPara','imagePara','diffMax','diffMin','predTime');
+       
+end
+
+%% Test results output
+% output file
+outputFile = fullfile(outputBaseDir,[datestr(clock,30) '.txt']);
+fid=fopen(outputFile,'w');
+fprintf(fid,'similarityMethod = %s \n ',similarityMethod);
+fprintf(fid,'maxMovieLength = %d \n ',maxMovieLength);
+fprintf(fid,'lineIncrement = %d \n ',lineIncrement);
+fprintf(fid,'sysPara.stripSize = %d \n ',sysPara.stripSize);
+fprintf(fid,'sysPara.blockSize = %d \n ',sysPara.blockSize);
+fprintf(fid,'sysPara.shrinkSize = %d \n ',sysPara.shrinkSize);
+fprintf(fid,'sysPara.similarityThrBig = %d \n ',sysPara.similarityThrBig);
+fprintf(fid,'sysPara.similarityThrSmall = %d \n ',sysPara.similarityThrSmall);
+fprintf(fid,'sysPara.maxStripsAbnormalCount = %d \n ',sysPara.maxStripsAbnormalCount);
+fprintf(fid,'sysPara.searchRangeBigx = %d \n ',sysPara.searchRangeBigx);
+fprintf(fid,'sysPara.searchRangeBigy = %d \n ',sysPara.searchRangeBigy);
+fprintf(fid,'sysPara.searchRangeSmallx = %d \n ',sysPara.searchRangeSmallx);
+fprintf(fid,'sysPara.searchRangeSmally = %d \n ',sysPara.searchRangeSmally);
+fprintf(fid,'sysPara.stimulusPositionx = %d \n ',sysPara.stimulusPositionx);
+fprintf(fid,'sysPara.stimulusPositiony = %d \n ',sysPara.stimulusPositiony);
+fclose(fid)
 
 
-% Method 3: block registration
-%[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
-
-%% Step 3: compute the time to stimulus position
-predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
-
-%% Analyze results
 %
 %  Initialize the total movement dx/dy
 dxValuesTotal = [];
