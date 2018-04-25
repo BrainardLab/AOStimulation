@@ -160,6 +160,7 @@ load(desinArrayFile);
 end
 
 %Test case: desinusoid
+% loop for different method
 for testIdx = 1:2
     
     %Select test movie, the second iteration is for simplified desinsoid
@@ -182,8 +183,13 @@ for testIdx = 1:2
     %[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
     
     % Method 2: Incremental line by line registration.
-    [stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
+    [stripInfo1,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
         'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
+    
+    %save the test result
+    dx(testIdx,:) = [stripInfo.dx];
+    dy(testIdx,:) = [stripInfo.dy];
+    similarity(testIdx,:) = [stripInfo.result];
     
     % Method 3: block registration
     %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
@@ -202,33 +208,11 @@ for testIdx = 1:2
     if (~exist(outputDir,'dir'))
         mkdir(outputDir);
     end
-    save(fullfile(outputDir,'testResults'),'stripInfo','registeredMovie','refImage','similarityMethod','desinMovies','sysPara','imagePara','diffMax','diffMin','predTime');
+    save(fullfile(outputDir,'testResults'),'dx','dy','similarity','registeredMovie','refImage','similarityMethod','desinMovies','sysPara','imagePara','diffMax','diffMin','predTime');
        
 end
 
-%% Test results output
-% output file
-outputFile = fullfile(outputBaseDir,[datestr(clock,30) '.txt']);
-fid=fopen(outputFile,'w');
-fprintf(fid,'similarityMethod = %s \n ',similarityMethod);
-fprintf(fid,'maxMovieLength = %d \n ',maxMovieLength);
-fprintf(fid,'lineIncrement = %d \n ',lineIncrement);
-fprintf(fid,'sysPara.stripSize = %d \n ',sysPara.stripSize);
-fprintf(fid,'sysPara.blockSize = %d \n ',sysPara.blockSize);
-fprintf(fid,'sysPara.shrinkSize = %d \n ',sysPara.shrinkSize);
-fprintf(fid,'sysPara.similarityThrBig = %d \n ',sysPara.similarityThrBig);
-fprintf(fid,'sysPara.similarityThrSmall = %d \n ',sysPara.similarityThrSmall);
-fprintf(fid,'sysPara.maxStripsAbnormalCount = %d \n ',sysPara.maxStripsAbnormalCount);
-fprintf(fid,'sysPara.searchRangeBigx = %d \n ',sysPara.searchRangeBigx);
-fprintf(fid,'sysPara.searchRangeBigy = %d \n ',sysPara.searchRangeBigy);
-fprintf(fid,'sysPara.searchRangeSmallx = %d \n ',sysPara.searchRangeSmallx);
-fprintf(fid,'sysPara.searchRangeSmally = %d \n ',sysPara.searchRangeSmally);
-fprintf(fid,'sysPara.stimulusPositionx = %d \n ',sysPara.stimulusPositionx);
-fprintf(fid,'sysPara.stimulusPositiony = %d \n ',sysPara.stimulusPositiony);
-fclose(fid)
-
-
-%
+%% Test results analysis
 %  Initialize the total movement dx/dy
 dxValuesTotal = [];
 dyValuesTotal = [];
