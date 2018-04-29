@@ -15,29 +15,29 @@ function AOStimulationLocalHook
 % to match what is true on your computer.
 
 %% Say hello
-theApproach = 'AOStimulation';
-fprintf('Running %s local hook\n',theApproach);
+theProject = 'AOStimulation';
+fprintf('Running %s local hook\n',theProject);
 
 %% Remove old preferences
-if (ispref(theApproach))
-    rmpref(theApproach);
+if (ispref(theProject))
+    rmpref(theProject);
 end
 
 %% Define prefs for working directories
 if (ispc)
     % If it is a PC, it's Hong for right now.
-    setpref(theApproach,'MovieBaseDir', '.\data\');
-    setpref(theApproach,'OutputBaseDir', '.data\TestOutput');
+    setpref(theProject,'MovieBaseDir', '.\data\');
+    setpref(theProject,'OutputBaseDir', '.data\TestOutput');
 else
     [~, userID] = system('whoami');
     userID = strtrim(userID);
     switch userID
         case {'dhb'}
-            setpref(theApproach,'MovieBaseDir', '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies');
-            setpref(theApproach,'OutputBaseDir', '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestOutput');        
+            setpref(theProject,'MovieBaseDir', '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies');
+            setpref(theProject,'OutputBaseDir', '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestOutput');        
         otherwise
-            setpref(theApproach,'MovieBaseDir', ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/MELA_materials/AOFN_data/AOFPGATestData/TestMovies']);
-            setpref(theApproach,'OutputBaseDir', ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/MELA_materials/AOFN_data/AOFPGATestData/TestOutput']);        
+            setpref(theProject,'MovieBaseDir', ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/MELA_materials/AOFN_data/AOFPGATestData/TestMovies']);
+            setpref(theProject,'OutputBaseDir', ['/Users/' userID '/Dropbox (Aguirre-Brainard Lab)/MELA_materials/AOFN_data/AOFPGATestData/TestOutput']);        
     end
 end
 
