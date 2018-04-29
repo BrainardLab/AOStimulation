@@ -1,0 +1,15 @@
+[
+   {
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "Configuration/AOStimulationLocalHookTemplate.m",
+		"name": "AOStimulation",
+		"pathPlacement": "append",
+		"subfolder": "Code",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": ""
+	}
+]
