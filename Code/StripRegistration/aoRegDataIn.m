@@ -1,8 +1,8 @@
-function [refImage,rawMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,maxMovieLength)
+function [rawMovies,imagePara] = aoRegDataIn(movieFile,maxMovieLength)
 % Read in a movie acquired to do registration
 %
 % Syntax:
-%    [refImage,rawMovies] = aoRegDataIn(movieFile,refImageFile,maxMovieLength)
+%    [rawMovies] = aoRegDataIn(movieFile,maxMovieLength)
 %
 % Description:
 %    Read in a previously acquired movie and refernce frame that we have
@@ -15,11 +15,9 @@ function [refImage,rawMovies,imagePara] = aoRegDataIn(movieFile,refImageFile,max
 %
 % Inputs:
 %    movieFile        - Full path to movie that we'll process.
-%    refImageFile     - Full path to reference image to be alignmented.
 %    maxMovieLength   - maximum frame number
 %
 % Outputs:
-%    refImage         - Ref frame, used to registration.
 %    rawMovies        - Movies for futher processing
 %    imagePara        - Image parameters, such as size, frame number, and
 %                       so on
@@ -40,7 +38,6 @@ video = VideoReader(movieFile);
 imagePara.nFrames = maxMovieLength;
 imagePara.H = video.Height;
 imagePara.W = video.Width;
-%%%Rate = video.FrameRate;
 
 % Transfer image data into rawMovies, for simple test parpare 20 frame. the whole frame should be imagePara.nFrames
 rawMovies(1:video.NumberOfFrames) = struct('cdata',zeros(imagePara.H,imagePara.W,3,'uint8'),'colormap',[]);
@@ -48,9 +45,6 @@ for i = 1:maxMovieLength
     rawMovies(i).cdata = read(video,i);
 end
 
-% Get the ref image. currently, just frame
-% 1 of the input movie
-referenceFrameNumber = 1;
-refImage = rawMovies(referenceFrameNumber).cdata;
+
 
 
