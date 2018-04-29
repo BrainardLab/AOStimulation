@@ -37,12 +37,11 @@ outputBaseDir = getpref(theProject,'OutputBaseDir');
 %   NC_11002_20160405_OD_confocal_0128
 %   NC_11002_20160405_OD_confocal_0133
 %   NC_11002_20160405_OD_confocal_0124
-testDirectoryName = 'NC_11002_20160405_OD_confocal_0116';
-refImageName = '';
-movieDir = fullfile(movieBaseDir,testDirectoryName);
-rawMovieFile = fullfile(movieDir,[testDirectoryName '.avi']);
-desinusoidedMovieFile = fullfile(movieDir,[testDirectoryName '_desinusoided.avi']);
-referenceImageFile = fullfile(movieBaseDir,refImageName);
+testName = 'NC_11002_20160405_OD_confocal_0116';
+movieDir = fullfile(movieBaseDir,testName);
+rawMovieFile = fullfile(movieDir,[testName '.avi']);
+desinusoidedMovieFile = fullfile(movieDir,[testName '_desinusoided.avi']);
+referenceImageFile = fullfile(movieBaseDir,'');
 desinTransformFile = fullfile(movieDir,'desinusoid_matrix.mat');
 
 %% Choices
@@ -121,23 +120,29 @@ sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
                       +sysPara.vtActive+sysPara.vtFrontPorch)...
                       *sysPara.timePerLine;
 
-%% Step 1: Read the desinusoided movie
-[desinMovie,imagePara] = aoReadMovie(desinusoidedMovieFile,maxMovieLength);
-actualMovieLength = length(desinMovie);
 
-%% Step 2: Get reference image and set image size
-if (isempty(refImageName))
-    refImage = desinMovie(1).cdata;
-else
-    error('Need to write code to read a real reference image');
-end
-[tempH,tempW] = size(refImage);
-if (tempH ~= imagePara.H)
-    error('Ref image height not equal to movie height');
-end
-if (tempW ~= imagePara.W)
-    error('Ref image width not equal to movie width');
-end
+%% Desinusoider parameters. Not yet used.
+desinArray = [];
+
+%% Image data parameters.
+%
+% We'll test with a movie, and use one of its frames as the reference image
+% for now.  Later, we may explicitly have a pre-computed reference image.
+
+%% Step 1: Read the movie and ref image
+[refImage,rawMovies,imagePara] = aoReadMovie(desinusoidedMovieFile,referenceImageFile,maxMovieLength);
+actualMovieLength = maxMovieLength;
+
+%% Step 2
+% Desinusoiding. 
+desinTransform = load(desinTransformFile);
+desinMovies = aoDesinusoid(desinTransform.vertical_fringes_desinusoid_matrix,rawMovies,maxMovieLength);
+
+%Currently set the first frame as ref image
+refImage = desinMovies(:,:,1);
+
+%Set the image size
+[imagePara.H,imagePara.W] = size(refImage);
 
 %% Step 3
 %
@@ -147,17 +152,18 @@ end
 %[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
 
 % Method 2: Incremental line by line registration.
-[stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovie,sysPara,imagePara, ...
+[stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovies,sysPara,imagePara, ...
     'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
 
 % Save the output of this method.  Name tracks which similarity method is
 % used.  Could add more parameters to name if there are key parameters we
 % want to vary and record output for.
-outputDir = fullfile(outputBaseDir,testDirectoryName,sprintf('Incremental_%s',similarityMethod));
+outputDir = fullfile(outputBaseDir,sprintf('Incremental_%s',similarityMethod));
 if (~exist(outputDir,'dir'))
     mkdir(outputDir);
 end
-save(fullfile(outputDir,'RegistrationResults'),'stripInfo','registeredMovie','status','refImage','desinMovie','sysPara','imagePara');
+save(fullfile(outputDir,'RegistrationResults',stripInfo,registeredMovie,status,refImage,desinMovies,sysPara,imagePara));
+
 
 % Method 3: block registration
 %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
