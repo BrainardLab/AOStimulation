@@ -14,6 +14,9 @@
 %% Clear out workspace
 clear; close all; tic;
 
+%% Name the project.
+theProject = 'AOStimulation';
+
 %% Define working directories
 %
 % This counts on the preferences set up in the local
@@ -23,26 +26,24 @@ clear; close all; tic;
 %
 % If you don't use ToolboxToolbox, then run the template local
 % hook by hand each time you want to work on this project.
-movieBaseDir = getpref(theApproach,'MovieBaseDir');
-outputBaseDir = getpref(theApproach,'OutputBaseDir');  
+movieBaseDir = getpref(theProject,'MovieBaseDir');
+outputBaseDir = getpref(theProject,'OutputBaseDir');  
 
 %% Define input directory and corresponding files
 %
 % Available files
-%   NC_11002_20160405_OD_confocal_0116_desinusoided
-%   NC_11002_20160405_OD_confocal_0136_desinusoided
-%   NC_11002_20160405_OD_confocal_0128_desinusoided
-%   NC_11002_20160405_OD_confocal_0133_desinusoided
-%   NC_11002_20160405_OD_confocal_0124_desinusoided
-testName = 'NC_11002_20160405_OD_confocal_0116';
-movieDir = fullfile(movieBaseDir,testName);
-rawMovieFile = fullfile(movieDir,[testName '.avi']);
-desinusoidedMovieFile = fullfile(movieDir,[testName '_desinusoided.avi']);
-referenceImageFile = fullfile(movieBaseDir,'');
-desinArrayFile = fullfile(movieDir,'desinusoid_matrix.mat');
-
-% desinsoid array file
-desinArrayFile = 'vertical_fringes_desinusoid_matrix.mat';
+%   NC_11002_20160405_OD_confocal_0116
+%   NC_11002_20160405_OD_confocal_0136
+%   NC_11002_20160405_OD_confocal_0128
+%   NC_11002_20160405_OD_confocal_0133
+%   NC_11002_20160405_OD_confocal_0124
+testDirectoryName = 'NC_11002_20160405_OD_confocal_0116';
+refImageName = '';
+movieDir = fullfile(movieBaseDir,testDirectoryName);
+rawMovieFile = fullfile(movieDir,[testDirectoryName '.avi']);
+desinusoidedMovieFile = fullfile(movieDir,[testDirectoryName '_desinusoided.avi']);
+referenceImageFile = fullfile(movieBaseDir,refImageName);
+desinTransformFile = fullfile(movieDir,'desinusoid_matrix.mat');
 
 %% Choices
 similarityMethod = 'NCC1';
@@ -78,44 +79,44 @@ sysPara.similarityThrBig = 0.7;
 sysPara.similarityThrSmall = 0.5;
 
 % When strips search similairy is less than sysPara.similarityThrSmall,
-% the counter plus 1. If the next sysPara.maxStripsAbnormalCount strips 
+% the counter increments. If the next sysPara.maxStripsAbnormalCount strips 
 % are less than sysPara.similarityThrSmall, we discard current frame.
 sysPara.maxStripsAbnormalCount=2;
 
-% Define search range. This limits the
-% amount of searching that we have to do.
+% Define search range. This limits the amount of searching that we have to
+% do.
 sysPara.searchRangeBigx = 140;
 sysPara.searchRangeBigy = 140;
 sysPara.searchRangeSmallx = 16;
 sysPara.searchRangeSmally = 16;
 
-%define the stimulus position
+% Define the stimulus position
 sysPara.stimulusPositionx=210;
 sysPara.stimulusPositiony=360;
 
-%timing parameters for the AOSLO
-%clock frequency
+% Timing parameters for the AOSLO clock frequency
 sysPara.pixClkFreq = 20 * 10^6;
 sysPara.pixTime = 10^9/sysPara.pixClkFreq;
 
-%horizontal paramters in pixels
+% Horizontal scan paramters in pixels
 sysPara.hrSync = 8;
 sysPara.hrBackPorch = 115;
 sysPara.hrActive = 512;
 sysPara.hrFrontPorch = 664;
 
-%time for very line (unit ns)
+% Time per horizational line (unit ns)
 sysPara.timePerLine = (sysPara.hrSync + sysPara.hrBackPorch...
                       +sysPara.hrActive+sysPara.hrFrontPorch)...
                       *sysPara.pixTime;
                   
 
-%vertical / frame parameters in lines.
+% Vertical / frame parameters in lines.
 sysPara.vtSync = 10;
 sysPara.vtBackPorch = 30;
 sysPara.vtActive = 512;
 sysPara.vtFrontPorch = 228;
-%time for very frame (unit ns)
+
+% Time for vertical frame (unit ns)
 sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
                       +sysPara.vtActive+sysPara.vtFrontPorch)...
                       *sysPara.timePerLine;
@@ -129,24 +130,23 @@ desinArray = [];
 % We'll test with a movie, and use one of its frames as the reference image
 % for now.  Later, we may explicitly have a pre-computed reference image.
 
-% Quick and dirty way to tell Hong and David's computers apart.  Will move
-% to ToolboxToolbox someday for this. 
-% test avi :
-
 %% Step 1: Read the movie and ref image
-[refImage,rawMovies,imagePara] = aoRegDataIn(desinusoidedMovieFile,referenceImageFile,maxMovieLength);
+[desinMovies,imagePara] = aoRegDataIn(desinusoidedMovieFile,referenceImageFile,maxMovieLength);
 actualMovieLength = maxMovieLength;
 
-%% Step 2
-% Desinusoiding. 
-load(desinArrayFile);
-desinMovies = aoRegDesin(vertical_fringes_desinusoid_matrix,rawMovies,maxMovieLength);
-
-%Currently set the first frame as ref image
-refImage = desinMovies(:,:,1);
-
-%Set the image size
-[imagePara.H,imagePara.W] = size(refImage);
+%% Step 2: Get reference image and set image size
+if (isempty(refImageName))
+    refImage = desinMovies(:,:,1);
+else
+    error('Need to write code to read a real reference image');
+end
+[tempH,tempW] = size(refImage);
+if (tempH ~= imagePara.H)
+    error('Ref image height not equal to movie height');
+end
+if (tempV ~= imagePara.V)
+    error('Ref image width not equal to movie width');
+end
 
 %% Step 3
 %
@@ -167,7 +167,6 @@ if (~exist(outputDir,'dir'))
     mkdir(outputDir);
 end
 save(fullfile(outputDir,'RegistrationResults',stripInfo,registeredMovie,status,refImage,desinMovies,sysPara,imagePara));
-
 
 % Method 3: block registration
 %[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
