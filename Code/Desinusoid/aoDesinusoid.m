@@ -1,29 +1,23 @@
-function [desinMovies] = aoRegDesin(desinMatrix,rawMovies,maxMovieLength)
+function [desinMovie] = aoDesinusoid(desinTransform,rawMovie)
 % Desinsoid the raw movies
 %
 % Syntax:
-%    [desinMovies] = aoRegDesin(desinArray,rawMovies,maxMovieLength);
+%    [desinMovie] = aoDesinusoid(desinTransform,rawMovies)
 %
 % Description:
 %    Simplify the original desinsoid array by only selecting the max 6 
 %    point every line. And the input raw movies multiply the array to
 %    get the desinsoid movies.
 %
-%    We have three ways of computing similarity
-%       'SAD': Sum of absolute differences
-%       'SSAD': Sum of squared differences
-%       'NCC': Cross-correlation
-%
 % Inputs:
-%    desinMatrix        - original desinsoid array.
-%    rawMovies          - raw movies.
-%    maxMovieLength     - maximum frame number
+%    desinTransform     - Original desinsoid array.
+%    rawMovie           - Raw movies.
 %
 % Outputs:
-%    desinMovies        - desinsoided movides.
+%    desinMovie         - Desinsoided movides.
 %
 % Optional key/value pairs:
-%    
+%    None.   
 %
 % See also:
 %
@@ -31,31 +25,29 @@ function [desinMovies] = aoRegDesin(desinMatrix,rawMovies,maxMovieLength)
 % History:
 %   04/16/18  tyh
 
-% Parse
+% Simplify the desinsoid array
+% Size of array
+[s1,s2] = size(desinTransform);
 
-%Simplify the desinsoid array
-%Size of array
-[s1,s2] = size(desinMatrix);
-
-%Initial the array
+% Initial the array
 desinArray1=zeros(s1,s2);
 
 % Loop line by line
 for i=1:s1
     
-    %Sort the current line
-    [sortVaule sortIdx] = sort(desinMatrix(i,:));
+    % Sort the current line
+    [sortVaule sortIdx] = sort(desinTransform(i,:));
     
-    %Define the max/next max value in the line 
+    % Define the max/next max value in the line 
     maxIdx = sortIdx(end);
     nextMaxIdx = sortIdx(end-1);
     
-    %Judge if the max value and next max value is nearby
+    % Judge if the max value and next max value is nearby
     if (abs(maxIdx-nextMaxIdx)~=1)
         sprintf('mismatch in Array line %d',i);
     end
     
-    %Set nearby max value's 6 points as the meaningful points
+    % Set nearby max value's 6 points as the meaningful points
     if (nextMaxIdx>maxIdx)
         selectP0Idx = maxIdx-2;
         selectP1Idx = maxIdx-1;
@@ -72,28 +64,28 @@ for i=1:s1
         selectP5Idx = maxIdx+2;
     end
     
-    %Update the simplified desinsoid array
-    desinArray1(i,selectP0Idx) = desinMatrix(i,selectP0Idx);
-    desinArray1(i,selectP1Idx) = desinMatrix(i,selectP1Idx);
-    desinArray1(i,selectP2Idx) = desinMatrix(i,selectP2Idx);
-    desinArray1(i,selectP3Idx) = desinMatrix(i,selectP3Idx);
-    desinArray1(i,selectP4Idx) = desinMatrix(i,selectP4Idx);
-    desinArray1(i,selectP5Idx) = desinMatrix(i,selectP5Idx);   
+    % Update the simplified desinsoid array
+    desinArray1(i,selectP0Idx) = desinTransform(i,selectP0Idx);
+    desinArray1(i,selectP1Idx) = desinTransform(i,selectP1Idx);
+    desinArray1(i,selectP2Idx) = desinTransform(i,selectP2Idx);
+    desinArray1(i,selectP3Idx) = desinTransform(i,selectP3Idx);
+    desinArray1(i,selectP4Idx) = desinTransform(i,selectP4Idx);
+    desinArray1(i,selectP5Idx) = desinTransform(i,selectP5Idx);   
 end
 
-%frame loop
+% Frame loop
 for frameIdx=1:maxMovieLength
     %Get the current raw image to desinsoid    
     rawImage = double(rawMovies(frameIdx).cdata);
     
     %For test, get the desinsoid movie by the original array
-    oriDesinImage = uint8(fix(rawImage * desinMatrix'));
+    oriDesinImage = uint8(fix(rawImage * desinTransform'));
     
     %Get the desinsoid movie by the simplified array
     newDesinImage = uint8(fix(rawImage * desinArray1'));
     
-    %
-    desinMovies(:,:,frameIdx) = newDesinImage;
+    % Insert back in
+    desinMovie(:,:,frameIdx) = newDesinImage;
     
     %Get the different result by the two array
     diffMax = max(max(newDesinImage-oriDesinImage));
@@ -103,7 +95,6 @@ for frameIdx=1:maxMovieLength
     fprintf('diff from two array max=%d, min=%d\n',diffMax,diffMin);
     
 end
-
 
 %% Figure out times from the matrix
 %
@@ -115,12 +106,12 @@ end
 % them from the system timing parameters.  Now they are just
 % made up.
 testSlope = 10;
-testTimes = (0:(size(desinMatrix,2)-1))';
+testTimes = (0:(size(desinTransform,2)-1))';
 testSignal = 10*testTimes;
 
 % Desinusoid the signal ramp.  This gives us
 % a desinusoided ramp that is very close to linear.
-testSignalDesin = desinMatrix*testSignal;
+testSignalDesin = desinTransform*testSignal;
 
 % We want to find the time at which the fictional input
 % signal is as close as possible to the value for each
@@ -134,7 +125,7 @@ testSignalDesin = desinMatrix*testSignal;
 % sample.  Note that the total time base corresponds
 % to that of the sampled input signal
 nFineSamples = 100000;
-fineTestTimes = linspace(0,(size(desinMatrix,2)-1),nFineSamples);
+fineTestTimes = linspace(0,(size(desinTransform,2)-1),nFineSamples);
 fineTestSignal = testSlope*fineTestTimes;
 
 % For each desinusoided signal value, find the time at which
@@ -171,7 +162,7 @@ for frameIdx=1:maxMovieLength
     rawImage = double(rawMovies(frameIdx).cdata);
     
     %For test, get the desinsoid movie by the original array
-    oriDesinImage = uint8(fix(rawImage * desinMatrix'));
+    oriDesinImage = uint8(fix(rawImage * desinTransform'));
     
     %Get the desinsoid movie by the simplified array
     for kk = 1:size(rawImage,1)
@@ -195,7 +186,6 @@ for frameIdx=1:maxMovieLength
     fprintf('diff from two array (nearest) max=%d, min=%d\n',diffMaxNearest,diffMinNearest); 
 end
 
-disp hellow
 
 
 
