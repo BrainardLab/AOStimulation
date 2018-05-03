@@ -9,11 +9,6 @@ function [diffMax,diffMin,linePixelTimeTable,desinMovies,simpleDesinMovies] = ao
 %    point every line. And the input raw movies multiply the array to
 %    get the desinsoid movies.
 %
-%    We have three ways of computing similarity
-%       'SAD': Sum of absolute differences
-%       'SSAD': Sum of squared differences
-%       'NCC': Cross-correlation
-%
 % Inputs:
 %    desinMatrix        - original desinsoid array.
 %    rawMovies          - raw movies.
