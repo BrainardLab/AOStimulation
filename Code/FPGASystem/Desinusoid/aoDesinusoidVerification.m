@@ -1,8 +1,8 @@
-function [diffMax,diffMin,linePixelTimeTable,desinMovies,simpleDesinMovies] = aoDesinsoidTest(desinMatrix,rawMovies,maxMovieLength)
+function [diffMax,diffMin,linePixelTimeTable,desinMovies,simpleDesinMovies] = aoDesinusoidVerification(desinMatrix,rawMovies,maxMovieLength)
 % Desinsoid the raw movies
 %
 % Syntax:
-%    [linePixelTimeTable,desinMovies,simpleDesinMovies] = aoRegDesin(desinMatrix,rawMovies,maxMovieLength)
+%    [diffMax,diffMin,linePixelTimeTable,desinMovies,simpleDesinMovies] = aoDesinusoidVerification(desinMatrix,rawMovies,maxMovieLength)
 %
 % Description:
 %    Simplify the original desinsoid array by only selecting the max 6 

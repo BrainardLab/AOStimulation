@@ -158,7 +158,7 @@ desinArray = [];
 % Desinusoiding. 
 if (testCase.desinusoid == 1)
 load(desinTransformFile);
-[diffMax,diffMin,linePixelTimeTable,desinMovie,simpleDesinMovie] = aoDesinsoidTest(vertical_fringes_desinusoid_matrix,rawMovie,maxMovieLength);
+[diffMax,diffMin,linePixelTimeTable,desinMovie,simpleDesinMovie] = aoDesinusoidVerification(vertical_fringes_desinusoid_matrix,rawMovie,maxMovieLength);
 end
 
 %Test case: desinusoid
