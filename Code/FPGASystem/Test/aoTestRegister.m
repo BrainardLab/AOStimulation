@@ -45,7 +45,7 @@ desinusoidedMovieFile = fullfile(movieDir,[testDirectoryName '_desinusoided.avi'
 referenceImageFile = fullfile(movieBaseDir,refImageName);
 desinTransformFile = fullfile(movieDir,'desinusoid_matrix.mat');
 
-%% Choices
+%% Initial choices
 similarityMethod = 'NCC1';
 
 % Which frame or frames to analyze. 0 means
@@ -54,7 +54,7 @@ whichFrame = 0;
 
 % Truncate movie at most this length. 0 means
 % do the whole movie.
-maxMovieLength = 4;
+maxMovieLength = 2;
 
 % Strip increment information
 %
@@ -123,7 +123,7 @@ sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
 
 %% Step 1: Read the desinusoided movie
 [desinMovie,imagePara] = aoReadMovie(desinusoidedMovieFile,maxMovieLength);
-actualMovieLength = length(desinMovie);
+[nouse1,nouse2,actualMovieLength] = size(desinMovie);
 
 %% Suggest moving testing of desinusoiding to its own test program.
 %
@@ -140,7 +140,7 @@ actualMovieLength = length(desinMovie);
 
 %% Step 2: Get reference image and set image size
 if (isempty(refImageName))
-    refImage = desinMovie(1).cdata;
+    refImage = desinMovie(:,:,1);
 else
     error('Need to write code to read a real reference image');
 end
@@ -152,31 +152,57 @@ if (tempW ~= imagePara.W)
     error('Ref image width not equal to movie width');
 end
 
-%% Step 3
-%
-% Do registration
+%Test different simliarity methods
+%Initial
+similarityMethods = [];
 
-% Method 1: No overlap between strips
-%[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
+%Test loop. Currently, two methods are compared.
+for testIdx = 1:2
+    
+    %Set test method
+    % NCC is the standart crosscorrelation calculation.
+    % NCC1 is the simple and low computation cost method
+    if (testIdx==1)
+        similarityMethod = 'NCC';
+    else
+        similarityMethod = 'NCC1';
+    end
+    %% Step 3
+    %
+    % Do registration
+    % Method 1: No overlap between strips
+    %[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
+    
+    % Method 2: Incremental line by line registration.
+    [stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovie,sysPara,imagePara, ...
+        'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
 
-% Method 2: Incremental line by line registration.
-[stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovie,sysPara,imagePara, ...
-    'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
+    %save the test result
+    for frameIdx = 1:actualMovieLength
+        testDx(:,frameIdx,testIdx) = [stripInfo(frameIdx,:).dx];
+        testDy(:,frameIdx,testIdx) = [stripInfo(frameIdx,:).dy];
+        testSimilarity(:,frameIdx,testIdx) = [stripInfo(frameIdx,:).result];
+    end
+    
+    %save similarity methods
+    similarityMethods = [similarityMethods similarityMethod];
+    
+end
 
 % Save the output of this method.  Name tracks which similarity method is
 % used.  Could add more parameters to name if there are key parameters we
 % want to vary and record output for.
-outputDir = fullfile(outputBaseDir,testDirectoryName,sprintf('Incremental_%s',similarityMethod));
+outputBaseDir = [outputBaseDir '\registration'];
+outputDir = fullfile(outputBaseDir,datestr(clock,30));
 if (~exist(outputDir,'dir'))
     mkdir(outputDir);
 end
-save(fullfile(outputDir,'RegistrationResults'),'stripInfo','registeredMovie','status','refImage','desinMovie','sysPara','imagePara');
-
-% Method 3: block registration
-%[regImage,status]=aoRegBlock(refImage,desinMovies,sysPara,imagePara);
+save(fullfile(outputDir,'testResults'),'testDx','testDy','testSimilarity',...
+    'registeredMovie','refImage','similarityMethods','desinMovie',...
+    'sysPara','imagePara');
 
 %% Step 3: compute the time to stimulus position
-predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
+%predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
 
 %% Analyze results
 %
@@ -187,46 +213,37 @@ dyValuesTotal = [];
 %Initialize all frames' similarity
 bestSimilarityTotal = [];
      
-% Make plots showing movement for each frame we analyzed
+% Make plots showing diff between different method
 for ii = 1:actualMovieLength
     % Get movement data for this frame
-    dxValues = [stripInfo(ii,:).dx];
-    dxValuesTotal = [dxValuesTotal dxValues];
-    dyValues = [stripInfo(ii,:).dy];
-    dyValuesTotal = [dyValuesTotal dyValues];
+    dxValues = testDx(:,ii,1)-testDx(:,ii,2);
+    dxValuesTotal = [dxValuesTotal dxValues'];
+    dyValues = testDy(:,ii,1)-testDy(:,ii,2);
+    dyValuesTotal = [dyValuesTotal dyValues'];
     
-    % Plot movement data
-    figure; hold on
-    plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
-    plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
-    ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
-    ylabel('Displacement (pixels)')
-    xlabel('Strip number');
-    title(sprintf('Frame %d',ii));
+%     % Plot movement data
+%     figure; hold on
+%     plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
+%     plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
+%     ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
+%     ylabel('Displacement (pixels)')
+%     xlabel('Strip number');
+%     title(sprintf('Frame %d',ii));
     
     %report the matching result? CC value
-    bestSimilarity = [stripInfo(ii,:).result];
-    bestSimilarityTotal = [bestSimilarityTotal bestSimilarity];
-    figure;
-    plot(1:length(bestSimilarity),bestSimilarity,'ro','MarkerSize',6,'MarkerFaceColor','r');
-    ylabel('Similarity')
-    xlabel('Strip number');
-    title(sprintf('Frame %d',ii));
+    bestSimilarity = testSimilarity(:,ii,1)-testSimilarity(:,ii,2);
+    bestSimilarityTotal = [bestSimilarityTotal bestSimilarity'];
+%     figure;
+%     plot(1:length(bestSimilarity),bestSimilarity,'ro','MarkerSize',6,'MarkerFaceColor','r');
+%     ylabel('Similarity')
+%     xlabel('Strip number');
+%     title(sprintf('Frame %d',ii));
     
     % Report largest strip-by-strip shifts
     maxLineDx = max(abs(diff(dxValues)));
     maxLineDy = max(abs(diff(dyValues)));
     fprintf('Frame %d, maximum dx difference: %d, maximum dy  difference: %d\n',ii,maxLineDx,maxLineDy);
-    
-    % Show the frame
-    figure;
-    subplot(1,2,1);
-    imshow(refImage)
-    title(sprintf('ref frame %d',1));
-    subplot(1,2,2);
-    imshow(registeredMovie(:,:,ii));
-    title(sprintf('Registered frame %d',ii));
-    
+        
 end
 
 %plot the all frames' dy/dx
@@ -248,11 +265,11 @@ for ii=1:actualMovieLength
 %         plot(ii,dxValuesTotal(ii),'o','color',[bestSimilarityTotal(ii) 0 0],'MarkerFaceColor',[bestSimilarityTotal(ii) 0 0]);
 %         plot(ii,dyValuesTotal(ii),'o','color',[0 0 bestSimilarityTotal(ii)],'MarkerFaceColor',[0 0 bestSimilarityTotal(ii)]);
     
-    ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
+    ylim([-9 9]);
 end
-ylabel('Displacement (pixels)')
+ylabel('Displacement diff (pixels)')
 xlabel('Strip number');
-title(sprintf('All Frames displacement'));
+title(sprintf('All Frames displacement diff'));
 hold off
 
 % plot all similarity
@@ -264,25 +281,13 @@ for ii=1:actualMovieLength
     else
         plot(1+(ii-1)*frame_length:ii*frame_length,bestSimilarity1,'go','MarkerSize',3,'MarkerFaceColor','g');
     end
+    ylim([-1 1]);
 end
-ylabel('Similarity')
+ylabel('Similarity diff')
 xlabel('Strip number');
-title(sprintf('All Frames Similiary'));
+title(sprintf('All Frames Similiary diff'));
 hold off
 
-% Plot prediction time
-figure;hold on
-for ii=1:actualMovieLength
-    if (mod(ii,2)==0)
-        plot(predTime(:,ii),'ro','MarkerSize',3,'MarkerFaceColor','r');
-    else
-        plot(predTime(:,ii),'go','MarkerSize',3,'MarkerFaceColor','g');
-    end
-end
-ylabel('Prediction Time')
-xlabel('Strip number');
-title(sprintf('Stimulus delivery estimation'));
-hold off
 
 %calculate the runtime
 t=toc;

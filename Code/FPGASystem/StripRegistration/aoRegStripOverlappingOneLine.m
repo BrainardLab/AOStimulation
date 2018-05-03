@@ -86,14 +86,17 @@ searchRangey = sysPara.searchRangeBigy;
 %Initial the best similarity
 bestSimilarity = -inf;
 
+%Movie size
+[s1,s2,s3]=size(desinusoidedMovie);
+
 %% Frame loop for motion estimation
-for frameIdx = 1:length(desinusoidedMovie)
+for frameIdx = 1:s3
     if (p.Results.verbose)
         fprintf('Starting registration for frame %d\n',frameIdx);
     end
     
     % Get the frame for registration
-    curImage = desinusoidedMovie(frameIdx).cdata;
+    curImage = desinusoidedMovie(:,:,frameIdx);
     
     % Initial bigMovementFlag. When big movement appears the 
     bigMovementFlag = 0;

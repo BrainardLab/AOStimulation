@@ -40,9 +40,8 @@ movieParams.H = video.Height;
 movieParams.W = video.Width;
 
 % Transfer video data into rawMovies
-theMovie(1:movieParams.nFrames) = struct('cdata',zeros(movieParams.H,movieParams.W,'uint8'));
 for i = 1:maxMovieLength
-    theMovie(i).cdata = readFrame(video);
+    theMovie(:,:,i) = readFrame(video);
 end
 
 
