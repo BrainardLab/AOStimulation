@@ -1,4 +1,4 @@
-%% Top level code for basic AO registration algorithm
+% Top level code for testing basic AO registration algorithms
 %
 % Description:
 %    This program is to verify the registration algorithm so that we can
@@ -9,60 +9,50 @@
 %
 
 % History
-%   03/14/18  tyh   
+%   03/14/18  tyh
 
 %% Clear out workspace
 clear; close all; tic;
 
+%% Name the project.
+theProject = 'AOStimulation';
 
-%Test case control
-testCase.desinusoid = 1;
-testCase.control = 0;
-testcase.registration = 0;
+%% What to do
+registerMethods = {'StripOverlappingOneLine'};
+similarityMethod = 'NCC';
+desinMovieMethods = {'Origin' 'simplification'};
+COMPUTE = true;
 
 %% Define working directories
 %
-% This differentiates David and Hong's computers.
-if (ispc)
-    movieBaseDir = '.\data\';
-    if (testCase.desinusoid==1 )
-        outputBaseDir = '.\data\TestOutput\desinusoid';
-    elseif (testcase.registration==1)
-        outputBaseDir = '.\data\TestOutput\registration';
-    else
-        outputBaseDir = '.\data\TestOutput\control';
-    end
-    refImageFile = "";
-else
-    movieBaseDir  = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestMovies';
-    outputBaseDir = '/Volumes/Users1/Dropbox (Aguirre-Brainard Lab)/AOFN_data/AOFPGATestData/TestOutput';
+% This counts on the preferences set up in the local
+% hook file.  The local hook file is in the Configuration
+% directory of the project, and will automatically be invoked
+% by the tbUseProject('AOStimulation'), if you use ToolboxToolbox.
+%
+% If you don't use ToolboxToolbox, then run the template local
+% hook by hand each time you want to work on this project.
+movieBaseDir = getpref(theProject,'MovieBaseDir');
+outputBaseDir = fullfile(getpref(theProject,'OutputBaseDir'),'deSinsoid');
+if (~exist(outputBaseDir,'dir'))
+    mkdir(outputBaseDir);
 end
 
-%% Define movie file
+%% Define input directory and corresponding files
 %
 % Available files
-% NC_11002_20160405_OD_confocal_0116_desinusoided.avi
-% NC_11002_20160405_OD_confocal_0136_desinusoided.avi
-% NC_11002_20160405_OD_confocal_0128_desinusoided.avi
-% NC_11002_20160405_OD_confocal_0133_desinusoided.avi
-% NC_11002_20160405_OD_confocal_0124_desinusoided.avi
-if (testCase.desinusoid == 1)
-    movieFile = fullfile(movieBaseDir,...
-        ['NC_11002_20160405_OD_confocal_0133\' 'NC_11002_20160405_OD_confocal_0133.avi']);
-else
-    movieFile = fullfile(movieBaseDir,...
-        ['NC_11002_20160405_OD_confocal_0133\' 'NC_11002_20160405_OD_confocal_0133_desinusoided.avi']);
-end
-testDirectoryName = 'NC_11002_20160405_OD_confocal_0133';
+%   NC_11002_20160405_OD_confocal_0116
+%   NC_11002_20160405_OD_confocal_0136
+%   NC_11002_20160405_OD_confocal_0128
+%   NC_11002_20160405_OD_confocal_0133
+%   NC_11002_20160405_OD_confocal_0124
+testDirectoryName = 'NC_11002_20160405_OD_confocal_0116';
 refImageName = '';
 movieDir = fullfile(movieBaseDir,testDirectoryName);
 rawMovieFile = fullfile(movieDir,[testDirectoryName '.avi']);
 desinusoidedMovieFile = fullfile(movieDir,[testDirectoryName '_desinusoided.avi']);
 referenceImageFile = fullfile(movieBaseDir,refImageName);
 desinTransformFile = fullfile(movieDir,'desinusoid_matrix.mat');
-
-%% Choices
-similarityMethod = 'NCC1';
 
 % Which frame or frames to analyze. 0 means
 % all frames.
@@ -86,212 +76,125 @@ lineIncrement = 1;
 sysPara.stripSize = 8;
 sysPara.blockSize = 8;
 
-% Shrink image to search the necessary part, it may help improve the 
+% Shrink image to search the necessary part, it may help improve the
 % similarity and reduce the computation cost.
 sysPara.shrinkSize = 150;
 
-% the threshold of similarity 
+% the threshold of similarity
 sysPara.similarityThrBig = 0.7;
 sysPara.similarityThrSmall = 0.5;
 
 % When strips search similairy is less than sysPara.similarityThrSmall,
-% the counter plus 1. If the next sysPara.maxStripsAbnormalCount strips 
+% the counter increments. If the next sysPara.maxStripsAbnormalCount strips
 % are less than sysPara.similarityThrSmall, we discard current frame.
 sysPara.maxStripsAbnormalCount=2;
 
-% Define search range. This limits the
-% amount of searching that we have to do.
+% Define search range. This limits the amount of searching that we have to
+% do.
 sysPara.searchRangeBigx = 140;
 sysPara.searchRangeBigy = 140;
 sysPara.searchRangeSmallx = 16;
 sysPara.searchRangeSmally = 16;
 
-%define the stimulus position
+% Define the stimulus position
 sysPara.stimulusPositionx=210;
 sysPara.stimulusPositiony=360;
 
-%timing parameters for the AOSLO
-%clock frequency
+% Timing parameters for the AOSLO clock frequency
 sysPara.pixClkFreq = 20 * 10^6;
 sysPara.pixTime = 10^9/sysPara.pixClkFreq;
 
-%horizontal paramters in pixels
+% Horizontal scan paramters in pixels
 sysPara.hrSync = 8;
 sysPara.hrBackPorch = 115;
 sysPara.hrActive = 512;
 sysPara.hrFrontPorch = 664;
 
-%time for very line (unit ns)
+% Time per horizational line (unit ns)
 sysPara.timePerLine = (sysPara.hrSync + sysPara.hrBackPorch...
-                      +sysPara.hrActive+sysPara.hrFrontPorch)...
-                      *sysPara.pixTime;
-                  
+    +sysPara.hrActive+sysPara.hrFrontPorch)...
+    *sysPara.pixTime;
 
-%vertical / frame parameters in lines.
+
+% Vertical / frame parameters in lines.
 sysPara.vtSync = 10;
 sysPara.vtBackPorch = 30;
 sysPara.vtActive = 512;
 sysPara.vtFrontPorch = 228;
-%time for very frame (unit ns)
+
+% Time for vertical frame (unit ns)
 sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
-                      +sysPara.vtActive+sysPara.vtFrontPorch)...
-                      *sysPara.timePerLine;
+    +sysPara.vtActive+sysPara.vtFrontPorch)...
+    *sysPara.timePerLine;
 
-
-%% Desinusoider parameters. Not yet used.
-desinArray = [];
-
-%% Image data parameters.
-%
-% We'll test with a movie, and use one of its frames as the reference image
-% for now.  Later, we may explicitly have a pre-computed reference image.
-
-% Quick and dirty way to tell Hong and David's computers apart.  Will move
-% to ToolboxToolbox someday for this. 
-% test avi :
-
-%% Step 1: Read the movie and ref image
+%% Step 1: Read the desinusoided movie
 [rawMovie,imagePara] = aoReadMovie(rawMovieFile,maxMovieLength);
-[s1,s2,actualMovieLength] = size(rawMovie);
+[nouse1,nouse2,actualMovieLength] = size(rawMovie);
 
-%% Step 2
-% Desinusoiding. 
-if (testCase.desinusoid == 1)
+%% Desinusoid verification
 load(desinTransformFile);
 [diffMax,diffMin,linePixelTimeTable,desinMovie,simpleDesinMovie] = aoDesinusoidVerification(vertical_fringes_desinusoid_matrix,rawMovie,maxMovieLength);
+
+
+%Test different simliarity methods
+%Initial
+simi = [];
+
+%Test loop. Currently, two methods are compared.
+if (COMPUTE)
+    for desinIndex = 1:length(desinMovieMethods)
+        
+        % Get methods
+        desinMovieMethod = desinMovieMethods{desinIndex};
+        outputName = sprintf('%s_%s',desinMovieMethod);
+        outputDir = fullfile(outputBaseDir,testDirectoryName,outputName);
+        if (~exist(outputDir,'dir'))
+            mkdir(outputDir);
+        end
+        
+        % Select test movie, the second iteration is for simplified desinsoid matrix
+        if (desinIndex==2)
+            desinMovie = simpleDesinMovie;
+        end
+        %% Step 2: Get reference image and set image size
+        if (isempty(refImageName))
+            refImage = desinMovie(:,:,1);
+        else
+            error('Need to write code to read a real reference image');
+        end
+        %Set the image size
+        [imagePara.H,imagePara.W] = size(refImage);
+        
+        % Get methods
+        [stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovie,sysPara,imagePara, ...
+            'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
+        
+        % Save the output of this method.  Name tracks which similarity method is
+        % used.  Could add more parameters to name if there are key parameters we
+        % want to vary and record output for.
+        save(fullfile(outputDir,'testDesinData'),'stripInfo','actualMovieLength',...
+            'registeredMovie','refImage','similarityMethod','desinMovie',...
+            'sysPara','imagePara','desinMovieMethod','diffMax','diffMin','linePixelTimeTable');
+    end
+    
 end
 
-%Test case: desinusoid
-% loop for different method
-for testIdx = 1:2
-    
-    %Select test movie, the second iteration is for simplified desinsoid
-    %matrix
-    if (testIdx==2)
-       desinMovie = simpleDesinMovie;
-    end
-    
-    %Currently set the first frame as ref image
-    refImage = desinMovie(:,:,1);
-    
-    %Set the image size
-    [imagePara.H,imagePara.W] = size(refImage);
-    
-    %% Step 3
-    %
-    % Do registration
-    
-    % Method 1: No overlap between strips
-    %[regImage,status]=aoRegStrip(refImage,desinMovies,sysPara,imagePara);
-    
-    % Method 2: Incremental line by line registration.
-    [stripInfo,registeredMovie,status] = aoRegStripOverlappingOneLine(refImage,desinMovie,sysPara,imagePara, ...
-        'SimilarityMethod',similarityMethod,'WhichFrame',whichFrame,'LineIncrement',lineIncrement);
-    
-    %save the test result
-    for frameIdx = 1:actualMovieLength
-        testDx(:,frameIdx,testIdx) = [stripInfo(frameIdx,:).dx];
-        testDy(:,frameIdx,testIdx) = [stripInfo(frameIdx,:).dy];
-        testSimilarity(:,frameIdx,testIdx) = [stripInfo(frameIdx,:).result];
-    end
+%% Analyze
+for desinIndex = 1:length(desinMovieMethods)
+           
+        % Get methods and load the data
+        desinMethod = desinMovieMethods{desinIndex};
+        outputName = sprintf('%s_%s',desinMethod);
+        outputDir = fullfile(outputBaseDir,testDirectoryName,outputName);
+        theData = load(fullfile(outputDir,'testDesinData.mat'));
+        
+        % Analyze
+        aoAnalyzeDesinData(theData,outputDir);
+         
+        %% Step 3: compute the time to stimulus position
+        %predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
            
 end
-
-% Save the output of this method.  Name tracks which similarity method is
-% used.  Could add more parameters to name if there are key parameters we
-% want to vary and record output for.
-outputBaseDir = [outputBaseDir '\desinusoid'];
-outputDir = fullfile(outputBaseDir,datestr(clock,30));
-if (~exist(outputDir,'dir'))
-    mkdir(outputDir);
-end
-save(fullfile(outputDir,'testResults'),'testDx','testDy','testSimilarity',...
-    'registeredMovie','refImage','similarityMethod','desinMovie',...
-    'sysPara','imagePara','diffMax','diffMin');
-    
-%% Test results analysis
-%  Initialize the total movement dx/dy
-dxValuesTotal = [];
-dyValuesTotal = [];
-
-%Initialize all frames' similarity
-bestSimilarityTotal = [];
-     
-% Make plots showing diff between different method
-for ii = 1:actualMovieLength
-    % Get movement data for this frame
-    dxValues = testDx(:,ii,1)-testDx(:,ii,2);
-    dxValuesTotal = [dxValuesTotal dxValues'];
-    dyValues = testDy(:,ii,1)-testDy(:,ii,2);
-    dyValuesTotal = [dyValuesTotal dyValues'];
-    
-%     % Plot movement data
-%     figure; hold on
-%     plot(1:length(dxValues),dxValues,'ro','MarkerSize',8,'MarkerFaceColor','r');
-%     plot(1:length(dyValues),dyValues,'bo','MarkerSize',6,'MarkerFaceColor','b');
-%     ylim([-9*sysPara.searchRangeSmallx 9*sysPara.searchRangeSmallx]);
-%     ylabel('Displacement (pixels)')
-%     xlabel('Strip number');
-%     title(sprintf('Frame %d',ii));
-    
-    %report the matching result? CC value
-    bestSimilarity = testSimilarity(:,ii,1)-testSimilarity(:,ii,2);
-    bestSimilarityTotal = [bestSimilarityTotal bestSimilarity'];
-%     figure;
-%     plot(1:length(bestSimilarity),bestSimilarity,'ro','MarkerSize',6,'MarkerFaceColor','r');
-%     ylabel('Similarity')
-%     xlabel('Strip number');
-%     title(sprintf('Frame %d',ii));
-    
-    % Report largest strip-by-strip shifts
-    maxLineDx = max(abs(diff(dxValues)));
-    maxLineDy = max(abs(diff(dyValues)));
-    fprintf('Frame %d, maximum dx difference: %d, maximum dy  difference: %d\n',ii,maxLineDx,maxLineDy);
-        
-end
-
-%plot the all frames' dy/dx
-frame_length = length(dxValuesTotal)/actualMovieLength;
-
-%figure for displacement
-figure;hold on
-for ii=1:actualMovieLength
-    dxValues=dxValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
-    dyValues=dyValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
-    if (mod(ii,2)==0)
-        plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'ro','MarkerSize',3,'MarkerFaceColor','r');
-        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'bo','MarkerSize',3,'MarkerFaceColor','b');
-    else
-        plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'go','MarkerSize',3,'MarkerFaceColor','g');
-        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'yo','MarkerSize',3,'MarkerFaceColor','y');
-    end
-
-%         plot(ii,dxValuesTotal(ii),'o','color',[bestSimilarityTotal(ii) 0 0],'MarkerFaceColor',[bestSimilarityTotal(ii) 0 0]);
-%         plot(ii,dyValuesTotal(ii),'o','color',[0 0 bestSimilarityTotal(ii)],'MarkerFaceColor',[0 0 bestSimilarityTotal(ii)]);
-    
-    ylim([-9 9]);
-end
-ylabel('Displacement diff (pixels)')
-xlabel('Strip number');
-title(sprintf('All Frames displacement diff'));
-hold off
-
-% plot all similarity
-figure;hold on
-for ii=1:actualMovieLength
-    bestSimilarity1=bestSimilarityTotal(1+(ii-1)*frame_length:ii*frame_length);
-    if (mod(ii,2)==0)
-        plot(1+(ii-1)*frame_length:ii*frame_length,bestSimilarity1,'ro','MarkerSize',3,'MarkerFaceColor','r');
-    else
-        plot(1+(ii-1)*frame_length:ii*frame_length,bestSimilarity1,'go','MarkerSize',3,'MarkerFaceColor','g');
-    end
-    ylim([-1 1]);
-end
-ylabel('Similarity diff')
-xlabel('Strip number');
-title(sprintf('All Frames Similiary diff'));
-hold off
-
 
 %calculate the runtime
 t=toc;

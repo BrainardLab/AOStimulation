@@ -94,7 +94,7 @@ for ii=1:theData.actualMovieLength
 end
 ylabel('Displacement (pixels)')
 xlabel('Strip number');
-title(sprintf('All Frames displacement for %s', theData.similarityMethod));
+title(sprintf('All Frames displacement for %s', theData.desinMovieMethod));
 hold off
 
 % Save Figure
@@ -114,7 +114,7 @@ for ii=1:theData.actualMovieLength
 end
 ylabel('Similarity')
 xlabel('Strip number');
-title(sprintf('All Frames Similiary for %s', theData.similarityMethod));
+title(sprintf('All Frames Similiary for %s', theData.desinMovieMethod));
 hold off
 
 % Save Figure

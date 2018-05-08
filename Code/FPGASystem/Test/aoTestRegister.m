@@ -19,9 +19,9 @@ theProject = 'AOStimulation';
 
 %% What to do
 registerMethods = {'StripOverlappingOneLine'};
-%similarityMethods = {'NCC', 'NCC1'};
-similarityMethods = {'NCC'};
-COMPUTE = false;
+similarityMethods = {'NCC', 'NCC1'};
+%similarityMethods = {'NCC'};
+COMPUTE = true;
 
 %% Define working directories
 %
@@ -130,19 +130,6 @@ sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
 %% Step 1: Read the desinusoided movie
 [desinMovie,imagePara] = aoReadMovie(desinusoidedMovieFile,maxMovieLength);
 [nouse1,nouse2,actualMovieLength] = size(desinMovie);
-
-%% Suggest moving testing of desinusoiding to its own test program.
-%
-% Note: it is trouble if you load the contents of a .mat file directly into a workspace.
-% This might clobber some variables that already exist.  Better to load into a structure
-% and then use that way.  I've made that change in the commented out code
-% below.
-%
-% This code did not make sense to me, because desinusoiding was being
-% applied to an already desinusoided movie.
-%
-% desinTransform = load(desinTransformFile);
-% desinMovies = aoDesinusoid(desinTransform.vertical_fringes_desinusoid_matrix,rawMovies,maxMovieLength);
 
 %% Step 2: Get reference image and set image size
 if (isempty(refImageName))
