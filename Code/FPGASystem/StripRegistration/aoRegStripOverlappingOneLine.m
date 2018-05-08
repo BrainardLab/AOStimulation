@@ -311,9 +311,6 @@ for frameIdx = 1:s3
     
     % Store this registered frame for output
     registeredMovie(:,:,frameIdx) = registeredImage;
-    
-    %For debug
-    disp breakinghere;
 end
 
 %% Convert output back to uint8

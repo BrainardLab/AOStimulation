@@ -11,8 +11,6 @@ function [theMovie,movieParams] = aoReadMovie(movieFile,maxMovieLength)
 %    But, reference frame part not yet implemented.  Just returns frame 1
 %    of the movie as the reference frame.
 %
-%    And currently just returns first 4 frames of the movie.
-%
 % Inputs:
 %    movieFile        - Full path to movie that we'll process.
 %    maxMovieLength   - maximum frame number
@@ -32,17 +30,23 @@ function [theMovie,movieParams] = aoReadMovie(movieFile,maxMovieLength)
 %   03/14/18  tyh
 
 % Read avi file
-video = VideoReader(movieFile);
+videoR = VideoReader(movieFile);
 
 % Get image parameters corresponding to the movie frames
-movieParams.nFrames = maxMovieLength;
-movieParams.H = video.Height;
-movieParams.W = video.Width;
+movieParams.H = videoR.Height;
+movieParams.W = videoR.Width;
 
 % Transfer video data into rawMovies
-for i = 1:maxMovieLength
-    theMovie(:,:,i) = readFrame(video);
+nFrames = 1;
+while (hasFrame(videoR))
+    theMovie(:,:,nFrames) = readFrame(videoR);
+    nFrames = nFrames + 1;
+    if (maxMovieLength ~= 0 & nFrames > maxMovieLength)
+        break;
+    end
 end
+movieParams.nFrames = nFrames-1;
+
 
 
 

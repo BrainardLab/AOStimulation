@@ -12,15 +12,18 @@
 %   03/14/18  tyh
 
 %% Clear out workspace
-clear; close all; tic;
+clear; close all;
+
+%% Start timing
+tic;
 
 %% Name the project.
 theProject = 'AOStimulation';
 
 %% What to do
 registerMethods = {'StripOverlappingOneLine'};
-similarityMethods = {'NCC', 'NCC1'};
-%similarityMethods = {'NCC'};
+%similarityMethods = {'NCC', 'NCC1'};
+similarityMethods = {'NCC'};
 COMPUTE = true;
 
 %% Define working directories
@@ -47,7 +50,7 @@ end
 %   NC_11002_20160405_OD_confocal_0133
 %   NC_11002_20160405_OD_confocal_0124
 testDirectoryName = 'NC_11002_20160405_OD_confocal_0116';
-refImageName = '';
+refImageName = 'referenceImage';
 movieDir = fullfile(movieBaseDir,testDirectoryName);
 rawMovieFile = fullfile(movieDir,[testDirectoryName '.avi']);
 desinusoidedMovieFile = fullfile(movieDir,[testDirectoryName '_desinusoided.avi']);
@@ -135,7 +138,9 @@ sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
 if (isempty(refImageName))
     refImage = desinMovie(:,:,1);
 else
-    error('Need to write code to read a real reference image');
+    refImageLoaded = load(fullfile(movieDir,refImageName));
+    refImage = refImageLoaded.refImage;
+    clear refImageLoaded;
 end
 [tempH,tempW] = size(refImage);
 if (tempH ~= imagePara.H)
@@ -145,16 +150,14 @@ if (tempW ~= imagePara.W)
     error('Ref image width not equal to movie width');
 end
 
-%Test different simliarity methods
-%Initial
-simi = [];
-
-%Test loop. Currently, two methods are compared.
+%% Loop over methods
+%
+% These are specified in cell arrays registerMethods and similarityMethods.
 if (COMPUTE)
     for registerIndex = 1:length(registerMethods)
         for similarityIndex = 1:length(similarityMethods)
             
-            % Get methods
+            % Get method
             registerMethod = registerMethods{registerIndex};
             similarityMethod = similarityMethods{similarityIndex};
             outputName = sprintf('%s_%s',registerMethod,similarityMethod);
@@ -200,18 +203,12 @@ for registerIndex = 1:length(registerMethods)
         % Analyze
         aoAnalyzeRegisterData(theData,outputDir);
         
- 
         %% Step 3: compute the time to stimulus position
         %predTime = aoTimePrediction(stripInfo,sysPara,maxMovieLength);
-        
-       
-        
+    
     end
 end
 
-
-
-
-%calculate the runtime
+%% Calculate and report how long this took
 t=toc;
-fprintf('cpu time is %d', t);
+fprintf('Running tests took %d seconds\n', t);

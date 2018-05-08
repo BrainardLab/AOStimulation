@@ -5,14 +5,12 @@ function aoAnalyzeRegisterData(theData,outputDir)
 %    aoAnalyzeRegisterData(theData,outputDir)
 %
 % Description:
-%    Compare the differnt image registration by the motion vector, 
-%    the similarity.
-%
+%    Analyze and plot how well a registration worked. Save out information
+%    so we can look at it later.
 %
 % Inputs:
-%    theData          - algorithms's data
-%    outputDir        - output directory
-%
+%    theData          - Algorithms's data
+%    outputDir        - Output directory
 %
 % Optional key/value pairs:
 %    None.
@@ -23,7 +21,7 @@ function aoAnalyzeRegisterData(theData,outputDir)
 % History:
 %   05/07/18  tyh
 
-% Unpack some info for analysis/plotting
+%% Unpack some info for analysis/plotting
 for frameIdx = 1:theData.actualMovieLength
     testDx(:,frameIdx) = [theData.stripInfo(frameIdx,:).dx];
     testDy(:,frameIdx) = [theData.stripInfo(frameIdx,:).dy];
