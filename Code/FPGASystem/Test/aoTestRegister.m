@@ -22,8 +22,8 @@ theProject = 'AOStimulation';
 
 %% What to do
 registerMethods = {'StripOverlappingOneLine'};
-%similarityMethods = {'NCC', 'NCC1'};
-similarityMethods = {'NCC'};
+similarityMethods = {'NCC', 'NCC1'};
+%similarityMethods = {'NCC'};
 COMPUTE = true;
 
 %% Define working directories
@@ -37,6 +37,10 @@ COMPUTE = true;
 % hook by hand each time you want to work on this project.
 movieBaseDir = getpref(theProject,'MovieBaseDir');
 outputBaseDir = fullfile(getpref(theProject,'OutputBaseDir'),'Registration');
+
+% Change the output to Dropbox
+outputBaseDir = fullfile('C:\Users\yhtian\Dropbox (Aguirre-Brainard Lab)\AOFN_Data\AOFPGATestData\TestOutput','Registration');
+
 if (~exist(outputBaseDir,'dir'))
     mkdir(outputBaseDir);
 end
@@ -63,7 +67,7 @@ whichFrame = 0;
 
 % Truncate movie at most this length. 0 means
 % do the whole movie.
-maxMovieLength = 2;
+maxMovieLength = 120;
 
 % Strip increment information
 %
@@ -103,32 +107,8 @@ sysPara.searchRangeSmally = 16;
 sysPara.stimulusPositionx=210;
 sysPara.stimulusPositiony=360;
 
-% Timing parameters for the AOSLO clock frequency
-sysPara.pixClkFreq = 20 * 10^6;
-sysPara.pixTime = 10^9/sysPara.pixClkFreq;
-
-% Horizontal scan paramters in pixels
-sysPara.hrSync = 8;
-sysPara.hrBackPorch = 115;
-sysPara.hrActive = 512;
-sysPara.hrFrontPorch = 664;
-
-% Time per horizational line (unit ns)
-sysPara.timePerLine = (sysPara.hrSync + sysPara.hrBackPorch...
-    +sysPara.hrActive+sysPara.hrFrontPorch)...
-    *sysPara.pixTime;
-
-
-% Vertical / frame parameters in lines.
-sysPara.vtSync = 10;
-sysPara.vtBackPorch = 30;
-sysPara.vtActive = 512;
-sysPara.vtFrontPorch = 228;
-
-% Time for vertical frame (unit ns)
-sysPara.timePerFrame = (sysPara.vtSync + sysPara.vtBackPorch...
-    +sysPara.vtActive+sysPara.vtFrontPorch)...
-    *sysPara.timePerLine;
+% Timing parameters for the AOSLO
+sysPara.aoTimingPara = aoTimingParametersGen;
 
 %% Step 1: Read the desinusoided movie
 [desinMovie,imagePara] = aoReadMovie(desinusoidedMovieFile,maxMovieLength);
