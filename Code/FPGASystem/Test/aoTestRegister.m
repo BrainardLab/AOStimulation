@@ -16,7 +16,7 @@ clear; close all;
 
 %% Start timing
 tic;
-
+   
 %% Name the project.
 theProject = 'AOStimulation';
 
