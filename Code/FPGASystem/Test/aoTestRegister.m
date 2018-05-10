@@ -24,7 +24,7 @@ theProject = 'AOStimulation';
 registerMethods = {'StripOverlappingOneLine'};
 similarityMethods = {'NCC', 'NCC1'};
 %similarityMethods = {'NCC'};
-COMPUTE = true;
+COMPUTE = true; 
 
 %% Define working directories
 %
