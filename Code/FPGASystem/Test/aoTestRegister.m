@@ -12,7 +12,8 @@
 %   03/14/18  tyh
 
 %% Clear out workspace
-clear; close all;
+%clear; 
+%close all;
     
 %% Start timing
 tic;
@@ -22,9 +23,9 @@ theProject = 'AOStimulation';
 
 %% What to do
 registerMethods = {'StripOverlappingOneLine'};
-similarityMethods = {'NCC', 'NCC1'};
-%similarityMethods = {'NCC'};
-COMPUTE = true; 
+%similarityMethods = {'NCC', 'NCC1'};
+similarityMethods = {'NCC'};
+COMPUTE = false; 
 
 %% Define working directories
 %
@@ -39,7 +40,7 @@ movieBaseDir = getpref(theProject,'MovieBaseDir');
 outputBaseDir = fullfile(getpref(theProject,'OutputBaseDir'),'Registration');
 
 % Change the output to Dropbox
-outputBaseDir = fullfile('C:\Users\yhtian\Dropbox (Aguirre-Brainard Lab)\AOFN_Data\AOFPGATestData\TestOutput','Registration');
+%outputBaseDir = fullfile('C:\Users\yhtian\Dropbox (Aguirre-Brainard Lab)\AOFN_Data\AOFPGATestData\TestOutput','Registration');
 
 if (~exist(outputBaseDir,'dir'))
     mkdir(outputBaseDir);
@@ -67,7 +68,7 @@ whichFrame = 0;
 
 % Truncate movie at most this length. 0 means
 % do the whole movie.
-maxMovieLength = 120;
+maxMovieLength = 145;
 
 % Strip increment information
 %

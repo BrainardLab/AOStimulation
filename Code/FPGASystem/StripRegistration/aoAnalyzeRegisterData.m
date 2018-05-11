@@ -72,27 +72,44 @@ end
 % Plot the all frames' dy/dx
 frame_length = length(dxValuesTotal)/theData.actualMovieLength;
 
-% Figure for displacement
+% Figure for x displacement
 dFig = figure;hold on
 for ii=1:theData.actualMovieLength
     dxValues=dxValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
-    dyValues=dyValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
+    %dyValues=dyValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
     if (mod(ii,2)==0)
         plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'ro','MarkerSize',3,'MarkerFaceColor','r');
-        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'bo','MarkerSize',3,'MarkerFaceColor','b');
+        %plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'bo','MarkerSize',3,'MarkerFaceColor','b');
     else
         plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'go','MarkerSize',3,'MarkerFaceColor','g');
-        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'yo','MarkerSize',3,'MarkerFaceColor','y');
+        %plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'yo','MarkerSize',3,'MarkerFaceColor','y');
     end
-    
-    %         plot(ii,dxValuesTotal(ii),'o','color',[bestSimilarityTotal(ii) 0 0],'MarkerFaceColor',[bestSimilarityTotal(ii) 0 0]);
-    %         plot(ii,dyValuesTotal(ii),'o','color',[0 0 bestSimilarityTotal(ii)],'MarkerFaceColor',[0 0 bestSimilarityTotal(ii)]);
-    
     ylim([-150 150]);
+    
 end
 ylabel('Displacement (pixels)')
 xlabel('Strip number');
-title(sprintf('All Frames displacement for %s', theData.similarityMethod));
+title(sprintf('col(x) displacement for %s', theData.similarityMethod));
+hold off
+
+% Figure for y displacement
+dFig = figure;hold on
+for ii=1:theData.actualMovieLength
+    %dxValues=dxValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
+    dyValues=dyValuesTotal(1+(ii-1)*frame_length:ii*frame_length);
+    if (mod(ii,2)==0)
+        %plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'ro','MarkerSize',3,'MarkerFaceColor','r');
+        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'bo','MarkerSize',3,'MarkerFaceColor','b');
+    else
+        %plot(1+(ii-1)*frame_length:ii*frame_length,dxValues,'go','MarkerSize',3,'MarkerFaceColor','g');
+        plot(1+(ii-1)*frame_length:ii*frame_length,dyValues,'yo','MarkerSize',3,'MarkerFaceColor','y');
+    end
+    ylim([-150 150]);
+    
+end
+ylabel('Displacement (pixels)')
+xlabel('Strip number');
+title(sprintf('row(y) displacement for %s', theData.similarityMethod));
 hold off
 
 % Save Figure
@@ -109,6 +126,7 @@ for ii=1:theData.actualMovieLength
         plot(1+(ii-1)*frame_length:ii*frame_length,bestSimilarity1,'go','MarkerSize',3,'MarkerFaceColor','g');
     end
     ylim([0 2]);
+    
 end
 ylabel('Similarity')
 xlabel('Strip number');
