@@ -41,16 +41,41 @@ movieBaseDir = getpref(theProject,'MovieBaseDir');
 testDirectoryName = 'NC_11002_20160405_OD_confocal_0116';
 movieDir = fullfile(movieBaseDir,testDirectoryName);
 
-%Read ALF's output movie
-% movieFile = fullfile(movieDir,'NC_11002_20160405_OD_confocal_0116_ref_83_lps_8_lbss_8_sr_n_143_cropped_1.avi');
-%
-% [theMovie,movieParams] = aoReadMovie(movieFile,0);
+% Read ALF's output movie
+movieFile = fullfile(movieDir,'NC_11002_20160405_OD_confocal_0116_ref_83_lps_8_lbss_8_sr_n_143_cropped_1.avi');
 
-%%
+[theMovie,movieParams] = aoReadMovie(movieFile,0);
+
+% Get the size of the movie
+[s1,s2,s3] = size(theMovie);
+
+% Pick up one frame
+imagePick = theMovie(:,:,1);
+
+% Find the valid image size
+flagFirst = 0;
+for i=2:s1
+    for j=2:s2
+        if (imagePick(i,j)>0 && (flagFirst == 0))
+            firstPoint = [i,j];
+            flagFirst = 1;
+        end
+        if (imagePick(i,j)>0)
+            lastPoint = [i,j];
+            
+        end
+    end
+end
+
+imageSize = lastPoint - firstPoint;
+
+% Define the CSV file 
 csvFile = fullfile(movieDir,'NC_11002_20160405_OD_confocal_0116_ref_83_lps_8_lbss_8_transforms.csv');
 
-% Try textread, dlmread, csvread
+% Read the CSV file
 csvData1 = csvread(csvFile);
+
+% Pick up the frames
 csvData = csvData1(5:end,:);
 
 % Size the data
