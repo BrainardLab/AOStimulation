@@ -25,7 +25,7 @@ theProject = 'AOStimulation';
 registerMethods = {'StripOverlappingOneLine'};
 %similarityMethods = {'NCC', 'NCC1'};
 similarityMethods = {'NCC'};
-COMPUTE = false; 
+COMPUTE = true; 
 
 %% Define working directories
 %
@@ -81,32 +81,32 @@ lineIncrement = 1;
 % stripSize - vertical size of registration strip in rows
 % blockSize - size of square blocks in reference image that
 %             we'll align incoming data to.
-sysPara.stripSize = 8;
-sysPara.blockSize = 8;
+sysPara.register.stripSize = 8;
+sysPara.register.blockSize = 8;
 
 % Shrink image to search the necessary part, it may help improve the
 % similarity and reduce the computation cost.
-sysPara.shrinkSize = 150;
+sysPara.register.shrinkSize = 150;
 
 % the threshold of similarity
-sysPara.similarityThrBig = 0.7;
-sysPara.similarityThrSmall = 0.5;
+sysPara.register.similarityThrBig = 0.7;
+sysPara.register.similarityThrSmall = 0.5;
 
-% When strips search similairy is less than sysPara.similarityThrSmall,
-% the counter increments. If the next sysPara.maxStripsAbnormalCount strips
-% are less than sysPara.similarityThrSmall, we discard current frame.
-sysPara.maxStripsAbnormalCount=2;
+% When strips search similairy is less than sysPara.register.register.similarityThrSmall,
+% the counter increments. If the next sysPara.register.register.maxStripsAbnormalCount strips
+% are less than sysPara.register.register.similarityThrSmall, we discard current frame.
+sysPara.register.maxStripsAbnormalCount=2;
 
 % Define search range. This limits the amount of searching that we have to
 % do.
-sysPara.searchRangeBigx = 140;
-sysPara.searchRangeBigy = 140;
-sysPara.searchRangeSmallx = 16;
-sysPara.searchRangeSmally = 16;
+sysPara.register.searchRangeBigx = 140;
+sysPara.register.searchRangeBigy = 140;
+sysPara.register.searchRangeSmallx = 16;
+sysPara.register.searchRangeSmally = 16;
 
 % Define the stimulus position
-sysPara.stimulusPositionx=210;
-sysPara.stimulusPositiony=360;
+sysPara.register.stimulusPositionx=210;
+sysPara.register.stimulusPositiony=360;
 
 % Timing parameters for the AOSLO
 sysPara.aoTimingPara = aoTimingParametersGen;

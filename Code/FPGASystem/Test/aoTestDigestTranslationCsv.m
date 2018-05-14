@@ -35,10 +35,11 @@ alignedMovieSuffix = 'ref_83_lps_8_lbss_8_sr_n_143_cropped_1';
 movieDir = fullfile(movieBaseDir,testDirectoryName);
 
 % Read aligned movie
-[alignedMovie,alignedMovieParams] = aoReadMovie(fullfile(movieDir,[testDirectoryName '_' alignedMovieSuffix '.avi']),0);
+[alignedMovie,alignedMovieParams] = aoReadMovie(fullfile(movieDir,[testDirectoryName '_' alignedMovieSuffix '.avi']),2);
 
 % Read translation csv file
-[eyePositionX,eyePositionY] = aoDigestTranslationCsv(fullfile(movieDir,[testDirectoryName '_' alignedMovieSuffix '_transforms.csv']));
+translationCsvFile = fullfile(movieDir,[testDirectoryName '_' alignedMovieSuffix '_transforms.csv']);
+[rawData,eyePositionX,eyePositionY] = aoDigestTranslationCsv(translationCsvFile);
 
 % Get the size of the movie
 [s1,s2,s3] = size(alignedMovie);
@@ -63,61 +64,76 @@ end
 
 imageSize = lastPoint - firstPoint;
 
-%     % Get the base move
-%     globalMove(1+fix(ii/3)) = frameData(1+(ii-1)*3,2);
-%     
-%     % Get the displacement
-%     xDisplacement = frameData(2+(ii-1)*3,2:end);
-%     yDisplacement = globalMove(1+fix(ii/3)) + frameData(3+(ii-1)*3,2:end);
-%     
-%     % Sort the frames
-%     xDisplacementFrame(:,frameIdx) = xDisplacement;
-%     yDisplacementFrame(:,frameIdx) = yDisplacement;
-%     
-% end
-% 
-% % Analyze the CSV result
-% numberOfFrame = nFrames;
-% %numberOfFrame = 1;
-% 
-% % Vasualize the result
-% figure;hold on
-% 
-% % Frame loop for x-direction displacment
-% for ii=1:numberOfFrame
-%     
-%     % Plot
-%     if (mod(ii,2)==0)
-%         plot(1+(ii-1)*maxImageRows:ii*maxImageRows,xDisplacementFrame(:,ii),'ro','MarkerSize',2,'MarkerFaceColor','r');
-%     else
-%         plot(1+(ii-1)*maxImageRows:ii*maxImageRows,xDisplacementFrame(:,ii),'go','MarkerSize',2,'MarkerFaceColor','g');
-%     end
-%     
-%     % Limit y axis
-%     ylim([-150 150]);
-% end
-% ylabel('Displacement')
-% xlabel('line number');
-% title(sprintf('col(x) displacement'));
-% hold off
-% 
-% %
-% figure;hold on
-% 
-% % Frame loop for y-direction
-% for ii=1:numberOfFrame
-%     
-%     % Plot
-%     if (mod(ii,2)==0)
-%         plot(1+(ii-1)*maxImageRows:ii*maxImageRows,yDisplacementFrame(:,ii),'ro','MarkerSize',2,'MarkerFaceColor','r');
-%     else
-%         plot(1+(ii-1)*maxImageRows:ii*maxImageRows,yDisplacementFrame(:,ii),'go','MarkerSize',2,'MarkerFaceColor','g');
-%     end
-%     
-%     % Limit y axis
-%     ylim([-150 150]);
-% end
-% ylabel('Displacement')
-% xlabel('line number');
-% title(sprintf('row(y) displacement'));
-% hold off
+%% 
+frameData = rawData(2:end,:);
+[h,w] = size(frameData);
+if (rem(h,3) ~= 0)
+    error('Something unexpected in csv file format');
+end
+nFrames = h/3;
+
+% Sort to the frames
+for ii=1:nFrames
+    
+    % Get frame index from the data
+    frameIdx = frameData(1+(ii-1)*3,1);
+    
+    % Get the base move
+    globalMove(1+fix(ii/3)) = frameData(1+(ii-1)*3,2);
+    
+    % Get the displacement
+    xDisplacement = frameData(2+(ii-1)*3,2:end);
+    yDisplacement = frameData(3+(ii-1)*3,2:end) + globalMove(1+fix(ii/3));
+    
+    % Sort the frames
+    xDisplacementFrame(:,frameIdx) = xDisplacement;
+    yDisplacementFrame(:,frameIdx) = yDisplacement;
+    
+end
+
+% Analyze the CSV result
+%numberOfFrame = nFrames;
+numberOfFrame = 1;
+maxImageRows = w -1;
+
+% Vasualize the result
+figure;hold on
+
+% Frame loop for x-direction displacment
+for ii=1:numberOfFrame
+    
+    % Plot
+    if (mod(ii,2)==0)
+        plot(1+(ii-1)*maxImageRows:ii*maxImageRows,xDisplacementFrame(:,ii),'ro','MarkerSize',2,'MarkerFaceColor','r');
+    else
+        plot(1+(ii-1)*maxImageRows:ii*maxImageRows,xDisplacementFrame(:,ii),'go','MarkerSize',2,'MarkerFaceColor','g');
+    end
+    
+    % Limit y axis
+    ylim([-150 150]);
+end
+ylabel('Displacement')
+xlabel('line number');
+title(sprintf('col(x) displacement'));
+hold off
+
+%
+figure;hold on
+
+% Frame loop for y-direction
+for ii=1:numberOfFrame
+    
+    % Plot
+    if (mod(ii,2)==0)
+        plot(1+(ii-1)*maxImageRows:ii*maxImageRows,yDisplacementFrame(:,ii),'ro','MarkerSize',2,'MarkerFaceColor','r');
+    else
+        plot(1+(ii-1)*maxImageRows:ii*maxImageRows,yDisplacementFrame(:,ii),'go','MarkerSize',2,'MarkerFaceColor','g');
+    end
+    
+    % Limit y axis
+    ylim([-150 150]);
+end
+ylabel('Displacement')
+xlabel('line number');
+title(sprintf('row(y) displacement'));
+hold off
