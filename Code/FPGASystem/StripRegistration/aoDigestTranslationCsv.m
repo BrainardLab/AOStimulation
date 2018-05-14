@@ -1,4 +1,4 @@
-function [eyePositionX,eyePositionY] = aoDigestTranslationCsv(translationCsvFile)
+function [rawData,eyePositionX,eyePositionY] = aoDigestTranslationCsv(translationCsvFile)
 % Read in a magic file that gives the alignment info from Alf's alignment
 %
 % Syntax:
@@ -15,7 +15,9 @@ function [eyePositionX,eyePositionY] = aoDigestTranslationCsv(translationCsvFile
 %    translationCsvFile       - String.  Full path to translation csv file
 %
 % Outputs:
-%
+%    eyePositionX             - Position of eye in x direction.
+%    eyePositionY             - Position of eye in y direction.
+%    rawData                  - CSV file data.
 % Optional key/value pairs:
 %
 % See also:
@@ -30,11 +32,8 @@ function [eyePositionX,eyePositionY] = aoDigestTranslationCsv(translationCsvFile
     aoDigestTranslationCsv(theTestFile);
 %}
 
-%% Define the CSV file
-csvFile = fullfile(translationCsvFile);
-
 %% Read the CSV file
-rawData = csvread(csvFile);
+rawData = csvread(translationCsvFile);
 
 %% Get size of aligned movie workspace
 alignedMovieRows = rawData(1,2);

@@ -71,17 +71,17 @@ end
 %% Strip increments one line at a time.
 %
 %Initial the search center width and height
-centerWidth = imagePara.W-2*sysPara.shrinkSize;
-centerHeight = imagePara.H-2*sysPara.shrinkSize;
+centerWidth = imagePara.W-2*sysPara.register.shrinkSize;
+centerHeight = imagePara.H-2*sysPara.register.shrinkSize;
 
 % Calculate number of strips that we will align in one frame.
-nStrips = centerHeight - (sysPara.stripSize-p.Results.LineIncrement);
+nStrips = centerHeight - (sysPara.register.stripSize-p.Results.LineIncrement);
 
 %Initialize the search range
-% searchRangex = sysPara.searchRangeSmallx;
-% searchRangey = sysPara.searchRangeSmally;
-searchRangex = sysPara.searchRangeBigx;
-searchRangey = sysPara.searchRangeBigy;
+% searchRangex = sysPara.register.searchRangeSmallx;
+% searchRangey = sysPara.register.searchRangeSmally;
+searchRangex = sysPara.register.searchRangeBigx;
+searchRangey = sysPara.register.searchRangeBigy;
 
 %Initial the best similarity
 bestSimilarity = -inf;
@@ -111,8 +111,8 @@ for frameIdx = 1:s3
     % Get all of the strips out of the current frame.
     % In a real time algorithm we would do this one strip at a time.
     for i = 1:nStrips
-        stripStart = i+sysPara.shrinkSize;
-        stripData(:,:,i) = curImage(stripStart:(stripStart+sysPara.stripSize-1),sysPara.shrinkSize+1:centerWidth+sysPara.shrinkSize);
+        stripStart = i+sysPara.register.shrinkSize;
+        stripData(:,:,i) = curImage(stripStart:(stripStart+sysPara.register.stripSize-1),sysPara.register.shrinkSize+1:centerWidth+sysPara.register.shrinkSize);
     end
     
     % Register each strip to the padded reference image
@@ -129,8 +129,8 @@ for frameIdx = 1:s3
         curStrip = stripData(:,:,stripIdx);
         
         % Set the up left point place
-        searchStripUpLeftx = stripIdx+sysPara.shrinkSize;
-        searchStripUpLefty = 1+sysPara.shrinkSize;
+        searchStripUpLeftx = stripIdx+sysPara.register.shrinkSize;
+        searchStripUpLefty = 1+sysPara.register.shrinkSize;
                 
         % Get the offset of search strip, based on last frame. If we have
         % searched the last strip in one frame, we use the movement as the
@@ -145,8 +145,8 @@ for frameIdx = 1:s3
             offsetSearchy = 0;
             
             %adjust to be big search arange
-            searchRangex = sysPara.searchRangeBigx;
-            searchRangey = sysPara.searchRangeBigy;
+            searchRangex = sysPara.register.searchRangeBigx;
+            searchRangey = sysPara.register.searchRangeBigy;
         elseif (stripIdx==1 && frameIdx>1)
             % Call frame alignment routine here.  This searches until it
             % figures out where things area.  It may have to search more
@@ -185,8 +185,8 @@ for frameIdx = 1:s3
                 %Limit the start range to prevent overflow
                 if (searchStripStartx < 1)
                     searchStripStartx = 1;
-                elseif (searchStripStartx > imagePara.H-sysPara.stripSize)
-                    searchStripStartx = imagePara.H-sysPara.stripSize;
+                elseif (searchStripStartx > imagePara.H-sysPara.register.stripSize)
+                    searchStripStartx = imagePara.H-sysPara.register.stripSize;
                 end
                 if (searchStripStarty < 1)
                     searchStripStarty = 1;
@@ -196,7 +196,7 @@ for frameIdx = 1:s3
                                 
                 %Generate the search strip
                 searchStrip = refImage(searchStripStartx:...
-                    (searchStripStartx+sysPara.stripSize-1),...
+                    (searchStripStartx+sysPara.register.stripSize-1),...
                     searchStripStarty:...
                     (searchStripStarty+centerWidth-1));
  
@@ -220,10 +220,10 @@ for frameIdx = 1:s3
         % If the matching is not good, namely the similarity is too
         % small, the matching is unvalid and the match of the last strip is
         % looked as the current strip's.
-        if ((stripIdx == 1) & (bestSimilarity<sysPara.similarityThrBig))
+        if ((stripIdx == 1) & (bestSimilarity<sysPara.register.similarityThrBig))
             stripInfo(frameIdx,stripIdx).dx =  offsetSearchx;
             stripInfo(frameIdx,stripIdx).dy =  offsetSearchy;
-        elseif (bestSimilarity<sysPara.similarityThrBig)
+        elseif (bestSimilarity<sysPara.register.similarityThrBig)
             stripInfo(frameIdx,stripIdx).dx =  stripInfo(frameIdx,stripIdx-1).dx;
             stripInfo(frameIdx,stripIdx).dy =  stripInfo(frameIdx,stripIdx-1).dy;
         else
@@ -234,13 +234,13 @@ for frameIdx = 1:s3
         % If current strip has good similarity, adjust the search range to 
         % be small so that the code can be ran fast. Otherwise, adjust the
         % range to the big search range.
-        if (bestSimilarity>sysPara.similarityThrBig)
-            searchRangex = sysPara.searchRangeSmallx;
-            searchRangey = sysPara.searchRangeSmally;
+        if (bestSimilarity>sysPara.register.similarityThrBig)
+            searchRangex = sysPara.register.searchRangeSmallx;
+            searchRangey = sysPara.register.searchRangeSmally;
             bigMovementFlag = 0;
-        elseif (bestSimilarity<sysPara.similarityThrSmall)
-            searchRangex = sysPara.searchRangeBigx;
-            searchRangey = sysPara.searchRangeBigy;
+        elseif (bestSimilarity<sysPara.register.similarityThrSmall)
+            searchRangex = sysPara.register.searchRangeBigx;
+            searchRangey = sysPara.register.searchRangeBigy;
             bigMovementFlag = 1;
         end
         
@@ -252,7 +252,7 @@ for frameIdx = 1:s3
         end
         
         %If count to max, the search failed and give one flag to save this. 
-        if (StripsAbnormalCount==sysPara.maxStripsAbnormalCount)
+        if (StripsAbnormalCount==sysPara.register.maxStripsAbnormalCount)
             
             %Set flag to 0, means this frame is bad for registration.
             stripInfo(frameIdx).frameAvailableFlag = 0;
@@ -288,8 +288,8 @@ for frameIdx = 1:s3
     for stripIdx = 1:nStrips
         
         % Calculate the up left point of the strip
-        searchStripUpLeftx = stripIdx+sysPara.shrinkSize;
-        searchStripUpLefty = 1+sysPara.shrinkSize;
+        searchStripUpLeftx = stripIdx+sysPara.register.shrinkSize;
+        searchStripUpLefty = 1+sysPara.register.shrinkSize;
         regStripStartx = stripInfo(frameIdx,stripIdx).dx+searchStripUpLeftx;
         regStripStarty = stripInfo(frameIdx,stripIdx).dy+searchStripUpLefty;
         
@@ -301,7 +301,7 @@ for frameIdx = 1:s3
             regStripStarty = 1;
         end
         % Fill the regImage
-%         registeredImage(regStripStartx:(regStripStartx+sysPara.stripSize-1),...
+%         registeredImage(regStripStartx:(regStripStartx+sysPara.register.stripSize-1),...
 %             regStripStarty:(regStripStarty+centerWidth-1)) = stripData(:,:,stripIdx);
         registeredImage(regStripStartx,...
             regStripStarty:(regStripStarty+centerWidth-1))...
